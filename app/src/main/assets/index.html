@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0e0f13">
 <title>Compteur de Points TCG</title>
 <script src="art.js"></script>
+<script src="fonds.js"></script>
+<script src="avatars.js"></script>
 <style>
 :root{--bg:#0e0f13;--panel:#181a21;--panel2:#20232c;--line:#2c2f3b;--text:#f3f3f6;--muted:#9a9cab;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
@@ -62,7 +64,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 /* Plateau */
 #board{position:absolute;inset:0;display:grid;gap:5px;padding:5px;padding-top:max(5px,env(safe-area-inset-top));padding-bottom:max(5px,env(safe-area-inset-bottom))}
 .cell{position:relative;container-type:size;overflow:hidden;border-radius:16px}
-.inner{position:absolute;left:50%;top:50%;width:100cqw;height:100cqh;transform:translate(-50%,-50%);border-radius:16px;background:linear-gradient(160deg,var(--c1),var(--c2));transition:filter .3s,box-shadow .15s}
+.inner{position:absolute;left:50%;top:50%;width:100cqw;height:100cqh;transform:translate(-50%,-50%);border-radius:16px;background:var(--art,none) center/cover no-repeat,linear-gradient(160deg,var(--c1),var(--c2));transition:filter .3s,box-shadow .15s}
 .inner.r90{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(90deg)}
 .inner.rn90{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(-90deg)}
 .inner.r180{transform:translate(-50%,-50%) rotate(180deg)}
@@ -72,7 +74,18 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .zone span{font-size:12cqmin;font-weight:300;opacity:.35;pointer-events:none}
 .zone.press{background:rgba(255,255,255,.08)}
 .info{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
-.pname{font-size:max(14px,6.5cqmin);font-weight:700;opacity:.9;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pname{font-size:max(14px,6.5cqmin);font-weight:700;max-width:72%;display:flex;align-items:center;justify-content:center;gap:.35em}
+.pname .nm{opacity:.9;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.av{display:block;border-radius:50%;overflow:hidden;flex:none}.av svg{width:100%;height:100%;display:block}
+.pname .av{width:1.8em;height:1.8em;box-shadow:0 0 0 2px rgba(255,255,255,.7),0 2px 8px rgba(0,0,0,.35)}
+.avbtn{width:46px;height:46px;border-radius:50%;flex:none;padding:0;overflow:hidden;box-shadow:0 0 0 3px var(--pc);position:relative}
+.avbtn svg{width:100%;height:100%;display:block}
+.avbtn::after{content:"✎";position:absolute;right:-1px;bottom:-1px;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#1b1407;font-size:10px;font-weight:900;display:grid;place-items:center}
+.avgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.avpick{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 0;border-radius:14px;border:2px solid transparent;font-size:11px;font-weight:600;color:var(--muted)}
+.avpick .av{width:50px;height:50px}
+.avpick.on{border-color:var(--gold);background:#272114;color:var(--gold)}
+.pbtn .av,.tokname .av{width:28px;height:28px}
 .life{font-size:36cqmin;font-weight:800;line-height:1;letter-spacing:-2px;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.35)}
 .life.l3{font-size:29cqmin}.life.l4{font-size:23cqmin;letter-spacing:-1px}
 .delta{position:absolute;top:14%;font-size:max(14px,7cqmin);font-weight:800;opacity:0;transition:opacity .25s}
@@ -132,6 +145,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .inner.win{box-shadow:inset 0 0 0 5px var(--gold),0 0 22px var(--gold)}
 .badge.might{background:#e35b3b;color:#fff}
 .badge.agi{background:#3bb3e3;color:#062433}
+.badge.mis{background:#f3e3b3;color:#3a2405}
 .tokrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--panel2);margin-top:6px}
 .tokrow span.l{flex:1;font-weight:600}
 .tokrow b{min-width:28px;text-align:center;font-size:20px}
@@ -226,6 +240,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
       <div class="chips" id="archLives"></div>
     </div>
     <h2>Joueurs</h2>
+    <p class="note" style="margin-top:0">Touche un avatar pour le changer.</p>
     <div id="names"></div>
     <h2>Début de partie</h2>
     <button class="toggle" id="randToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="randSw"></span></button>
@@ -269,7 +284,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
   <div class="scroll" style="padding-top:4px">
     <h2>Joueurs et points de vie</h2>
     <div id="narNames"></div>
-    <p class="note">Chaque joueur a un compteur de vie (modifiable ici) et un compteur de chakra qui part de 0 (maximum 100).</p>
+    <p class="note">Chaque joueur a un compteur de vie (modifiable ici) et un compteur de chakra qui part de 0 (maximum 100). Les points de mission se comptent avec 📜 dans le menu de partie.</p>
     <h2>Début de partie</h2>
     <button class="toggle" id="narRandToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="narRandSw"></span></button>
   </div>
@@ -438,6 +453,28 @@ function renderHome(){
 }
 $('#histBtn').onclick=()=>show('history');
 
+/* ---------- Avatars ---------- */
+const AVS=window.AVATARS||[];
+function avatarSvg(id){const a=AVS.find(x=>x.id===id);return a?a.svg:''}
+function avTag(id){const s=avatarSvg(id);return s?`<span class="av">${s}</span>`:''}
+/* Avatar par défaut : un différent pour chaque place */
+function defAv(S,n){if(!Array.isArray(S.avatars))S.avatars=[];for(let i=0;i<n;i++)if(!AVS.some(a=>a.id===S.avatars[i]))S.avatars[i]=AVS[i%AVS.length].id}
+function avBtn(i,id,color){return `<button class="avbtn" data-av="${i}" style="--pc:${color}" aria-label="Choisir un avatar">${avatarSvg(id)}</button>`}
+function bindAv(box,S,save,rerender){
+  document.querySelectorAll(box+' [data-av]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.av;
+    avatarModal(S.avatars[i],id=>{S.avatars[i]=id;save();rerender()});
+  });
+}
+function avatarModal(cur,onPick){
+  openModal(`<h3>Choisis ton avatar</h3><p class="m">Il s'affiche à côté de ton nom pendant la partie.</p>
+    <div class="avgrid">${AVS.map(a=>`<button class="avpick ${a.id===cur?'on':''}" data-id="${a.id}">${avTag(a.id)}${a.name}</button>`).join('')}</div>
+    <button class="btn ghost" id="avNo">Annuler</button>`);
+  document.querySelectorAll('#modal .avpick').forEach(b=>b.onclick=()=>{vibrate(6);closeModal();onPick(b.dataset.id)});
+  $('#avNo').onclick=closeModal;
+}
+const pnameHtml=p=>`<div class="pname">${avTag(p.avatar)}<span class="nm">${esc(p.name)}</span></div>`;
+
 /* ---------- Configuration ---------- */
 let setup=Object.assign({format:'commander',count:4,life:40,custom:false,archLife:40,names:['','','','',''],random:true},load('cdp_setup',{}));
 function saveSetup(){store('cdp_setup',setup)}
@@ -467,12 +504,14 @@ function renderSetup(){
   $('#archLives').innerHTML=ARCH_LIVES.map(l=>`<button class="chip ${l===setup.archLife?'on':''}" data-l="${l}">${l}</button>`).join('');
   document.querySelectorAll('#archLives .chip').forEach(b=>b.onclick=()=>{setup.archLife=+b.dataset.l;saveSetup();renderSetup()});
 
+  defAv(setup,setup.count);
   let h='';
   for(let i=0;i<setup.count;i++){
-    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(setup.names[i]||'')}">${isArch&&i===0?'<span class="role">ARCHENEMY</span>':''}</div>`;
+    h+=`<div class="prow">${avBtn(i,setup.avatars[i],COLORS[i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(setup.names[i]||'')}">${isArch&&i===0?'<span class="role">ARCHENEMY</span>':''}</div>`;
   }
   $('#names').innerHTML=h;
   document.querySelectorAll('#names input').forEach(inp=>inp.oninput=()=>{setup.names[+inp.dataset.i]=inp.value;saveSetup()});
+  bindAv('#names',setup,saveSetup,renderSetup);
   $('#randSw').classList.toggle('on',setup.random);
 }
 $('#customLifeIn').oninput=e=>{const v=parseInt(e.target.value,10);if(v>0&&v<1000){setup.life=v;saveSetup()}};
@@ -482,7 +521,7 @@ $('#startBtn').onclick=()=>{
   game={tcg:'magic',format:setup.format,start:setup.life,archLife:setup.archLife,monarch:null,
     players:Array.from({length:setup.count},(_,i)=>{
       const life=isArch&&i===0?setup.archLife:setup.life;
-      return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(setup.names[i]||'').trim(),life,start:life,city:false};
+      return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(setup.names[i]||'').trim(),avatar:setup.avatars[i],life,start:life,city:false};
     })};
   saveGame();startBoard();
   if(setup.random)setTimeout(pickFirst,450);
@@ -496,20 +535,22 @@ function renderFabSetup(){
   document.querySelectorAll('#fabFormats .fmt').forEach(b=>b.onclick=()=>{
     fabSetup.format=b.dataset.f;const l=FAB_FORMATS[fabSetup.format].life;fabSetup.lives=[l,l];saveFabSetup();renderFabSetup();
   });
+  defAv(fabSetup,2);
   let h='';
   for(let i=0;i<2;i++){
-    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(fabSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${fabSetup.lives[i]}"></div>`;
+    h+=`<div class="prow">${avBtn(i,fabSetup.avatars[i],COLORS[i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(fabSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${fabSetup.lives[i]}"></div>`;
   }
   $('#fabNames').innerHTML=h;
   document.querySelectorAll('#fabNames input[data-i]').forEach(inp=>inp.oninput=()=>{fabSetup.names[+inp.dataset.i]=inp.value;saveFabSetup()});
   document.querySelectorAll('#fabNames input[data-life]').forEach(inp=>inp.oninput=()=>{const v=parseInt(inp.value,10);if(v>0&&v<1000){fabSetup.lives[+inp.dataset.life]=v;saveFabSetup()}});
+  bindAv('#fabNames',fabSetup,saveFabSetup,renderFabSetup);
   $('#fabRandSw').classList.toggle('on',fabSetup.random);
 }
 $('#fabRandToggle').onclick=()=>{fabSetup.random=!fabSetup.random;saveFabSetup();$('#fabRandSw').classList.toggle('on',fabSetup.random)};
 $('#fabStartBtn').onclick=()=>{
   game={tcg:'fab',format:fabSetup.format,
     players:[0,1].map(i=>{const life=fabSetup.lives[i]||FAB_FORMATS[fabSetup.format].life;
-      return {name:(fabSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(fabSetup.names[i]||'').trim(),life,start:life,might:0,agility:0}})};
+      return {name:(fabSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(fabSetup.names[i]||'').trim(),avatar:fabSetup.avatars[i],life,start:life,might:0,agility:0}})};
   saveGame();startBoard();
   if(fabSetup.random)setTimeout(pickFirst,450);
 };
@@ -521,18 +562,20 @@ function renderLorSetup(){
   let c='';for(let n=2;n<=4;n++)c+=`<button class="chip ${n===lorSetup.count?'on':''}" data-n="${n}">${n}</button>`;
   $('#lorCounts').innerHTML=c;
   document.querySelectorAll('#lorCounts .chip').forEach(b=>b.onclick=()=>{lorSetup.count=+b.dataset.n;saveLorSetup();renderLorSetup()});
+  defAv(lorSetup,lorSetup.count);
   let h='';
   for(let i=0;i<lorSetup.count;i++){
-    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(lorSetup.names[i]||'')}"></div>`;
+    h+=`<div class="prow">${avBtn(i,lorSetup.avatars[i],COLORS[i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(lorSetup.names[i]||'')}"></div>`;
   }
   $('#lorNames').innerHTML=h;
   document.querySelectorAll('#lorNames input').forEach(inp=>inp.oninput=()=>{lorSetup.names[+inp.dataset.i]=inp.value;saveLorSetup()});
+  bindAv('#lorNames',lorSetup,saveLorSetup,renderLorSetup);
   $('#lorRandSw').classList.toggle('on',lorSetup.random);
 }
 $('#lorRandToggle').onclick=()=>{lorSetup.random=!lorSetup.random;saveLorSetup();$('#lorRandSw').classList.toggle('on',lorSetup.random)};
 $('#lorStartBtn').onclick=()=>{
   game={tcg:'lorcana',
-    players:Array.from({length:lorSetup.count},(_,i)=>({name:(lorSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(lorSetup.names[i]||'').trim(),life:0,start:0}))};
+    players:Array.from({length:lorSetup.count},(_,i)=>({name:(lorSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(lorSetup.names[i]||'').trim(),avatar:lorSetup.avatars[i],life:0,start:0}))};
   saveGame();startBoard();
   if(lorSetup.random)setTimeout(pickFirst,450);
 };
@@ -543,14 +586,16 @@ let narSetup=Object.assign({names:['',''],lives:[NARUTO_LIFE,NARUTO_LIFE],random
 if(!narSetup.lives)narSetup.lives=[NARUTO_LIFE,NARUTO_LIFE];
 function saveNarSetup(){store('cdp_nar_setup',narSetup)}
 function renderNarSetup(){
-  $('#narNames').innerHTML=[0,1].map(i=>`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(narSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${narSetup.lives[i]}"></div>`).join('');
+  defAv(narSetup,2);
+  $('#narNames').innerHTML=[0,1].map(i=>`<div class="prow">${avBtn(i,narSetup.avatars[i],COLORS[i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(narSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${narSetup.lives[i]}"></div>`).join('');
   document.querySelectorAll('#narNames input[data-i]').forEach(inp=>inp.oninput=()=>{narSetup.names[+inp.dataset.i]=inp.value;saveNarSetup()});
   document.querySelectorAll('#narNames input[data-life]').forEach(inp=>inp.oninput=()=>{const v=parseInt(inp.value,10);if(v>0&&v<1000){narSetup.lives[+inp.dataset.life]=v;saveNarSetup()}});
+  bindAv('#narNames',narSetup,saveNarSetup,renderNarSetup);
   $('#narRandSw').classList.toggle('on',narSetup.random);
 }
 $('#narRandToggle').onclick=()=>{narSetup.random=!narSetup.random;saveNarSetup();$('#narRandSw').classList.toggle('on',narSetup.random)};
 $('#narStartBtn').onclick=()=>{
-  game={tcg:'naruto',players:[0,1].map(i=>{const life=narSetup.lives[i]||NARUTO_LIFE;return {name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(narSetup.names[i]||'').trim(),life,start:life,chakra:0}})};
+  game={tcg:'naruto',players:[0,1].map(i=>{const life=narSetup.lives[i]||NARUTO_LIFE;return {name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(narSetup.names[i]||'').trim(),avatar:narSetup.avatars[i],life,start:life,chakra:0,missions:0}})};
   saveGame();startBoard();
   if(narSetup.random)setTimeout(pickFirst,450);
 };
@@ -563,7 +608,8 @@ function renderYgoSetup(){
   document.querySelectorAll('#ygoFormats .fmt').forEach(b=>b.onclick=()=>{ygoSetup.format=b.dataset.f;saveYgoSetup();renderYgoSetup()});
   $('#ygoModes').innerHTML=Object.entries(YGO_MODES).map(([k,v])=>`<button class="fmt ${k===ygoSetup.mode?'on':''}" data-m="${k}"><b>${v.label}</b><small>${v.desc}</small></button>`).join('');
   document.querySelectorAll('#ygoModes .fmt').forEach(b=>b.onclick=()=>{ygoSetup.mode=b.dataset.m;saveYgoSetup();renderYgoSetup()});
-  const row=i=>`<div class="prow"><span class="dot" style="background:${COLORS[ygoSetup.mode==='2v2'?Math.floor(i/2):i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Duelliste ${i+1}" value="${esc(ygoSetup.names[i]||'')}"></div>`;
+  defAv(ygoSetup,4);
+  const row=i=>`<div class="prow">${avBtn(i,ygoSetup.avatars[i],COLORS[ygoSetup.mode==='2v2'?Math.floor(i/2):i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Duelliste ${i+1}" value="${esc(ygoSetup.names[i]||'')}"></div>`;
   $('#ygoNames').innerHTML=ygoSetup.mode==='2v2'
     ?`<div class="team">Équipe 1</div>${row(0)}${row(1)}<div class="team">Équipe 2</div>${row(2)}${row(3)}`
     :row(0)+row(1);
@@ -571,14 +617,15 @@ function renderYgoSetup(){
   $('#ygoNote').textContent=ygoSetup.mode==='2v2'
     ?`Chaque équipe partage ses ${YGO_FORMATS[ygoSetup.format].life} LP. Toucher = ±100, appui long = ±1000, ou utilise la calculatrice du menu.`
     :`Toucher = ±100, appui long = ±1000, ou utilise la calculatrice du menu.`;
+  bindAv('#ygoNames',ygoSetup,saveYgoSetup,renderYgoSetup);
   $('#ygoRandSw').classList.toggle('on',ygoSetup.random);
 }
 $('#ygoRandToggle').onclick=()=>{ygoSetup.random=!ygoSetup.random;saveYgoSetup();$('#ygoRandSw').classList.toggle('on',ygoSetup.random)};
 $('#ygoStartBtn').onclick=()=>{
   const life=YGO_FORMATS[ygoSetup.format].life,nm=i=>(ygoSetup.names[i]||'').trim()||`Duelliste ${i+1}`,ok=i=>!!(ygoSetup.names[i]||'').trim();
   const players=ygoSetup.mode==='2v2'
-    ?[0,1].map(t=>({name:`${nm(t*2)} & ${nm(t*2+1)}`,named:ok(t*2)&&ok(t*2+1),life,start:life}))
-    :[0,1].map(i=>({name:nm(i),named:ok(i),life,start:life}));
+    ?[0,1].map(t=>({name:`${nm(t*2)} & ${nm(t*2+1)}`,named:ok(t*2)&&ok(t*2+1),avatar:ygoSetup.avatars[t*2],life,start:life}))
+    :[0,1].map(i=>({name:nm(i),named:ok(i),avatar:ygoSetup.avatars[i],life,start:life}));
   game={tcg:'ygo',format:ygoSetup.format,mode:ygoSetup.mode,players};
   saveGame();startBoard();
   if(ygoSetup.random)setTimeout(pickFirst,450);
@@ -588,14 +635,16 @@ $('#ygoStartBtn').onclick=()=>{
 let swSetup=Object.assign({names:['',''],lives:[SW_LIFE,SW_LIFE],random:true},load('cdp_sw_setup',{}));
 function saveSwSetup(){store('cdp_sw_setup',swSetup)}
 function renderSwSetup(){
-  $('#swNames').innerHTML=[0,1].map(i=>`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(swSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${swSetup.lives[i]}"></div>`).join('');
+  defAv(swSetup,2);
+  $('#swNames').innerHTML=[0,1].map(i=>`<div class="prow">${avBtn(i,swSetup.avatars[i],COLORS[i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(swSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${swSetup.lives[i]}"></div>`).join('');
   document.querySelectorAll('#swNames input[data-i]').forEach(inp=>inp.oninput=()=>{swSetup.names[+inp.dataset.i]=inp.value;saveSwSetup()});
   document.querySelectorAll('#swNames input[data-life]').forEach(inp=>inp.oninput=()=>{const v=parseInt(inp.value,10);if(v>0&&v<1000){swSetup.lives[+inp.dataset.life]=v;saveSwSetup()}});
+  bindAv('#swNames',swSetup,saveSwSetup,renderSwSetup);
   $('#swRandSw').classList.toggle('on',swSetup.random);
 }
 $('#swRandToggle').onclick=()=>{swSetup.random=!swSetup.random;saveSwSetup();$('#swRandSw').classList.toggle('on',swSetup.random)};
 $('#swStartBtn').onclick=()=>{
-  game={tcg:'sw',players:[0,1].map(i=>{const life=swSetup.lives[i]||SW_LIFE;return {name:(swSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(swSetup.names[i]||'').trim(),life,start:life}})};
+  game={tcg:'sw',players:[0,1].map(i=>{const life=swSetup.lives[i]||SW_LIFE;return {name:(swSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(swSetup.names[i]||'').trim(),avatar:swSetup.avatars[i],life,start:life}})};
   saveGame();startBoard();
   if(swSetup.random)setTimeout(pickFirst,450);
 };
@@ -624,6 +673,7 @@ function renderBoard(){
   boardLand=isLand();
   if(DUAL[game.tcg]&&!boardLand)return renderSplitBoard();
   const n=game.players.length,L=(boardLand?LAYOUTS_LAND:LAYOUTS)[n],b=$('#board');
+  setBg(b);
   b.style.gridTemplateAreas=L.areas;b.style.gridTemplateColumns=L.cols;b.style.gridTemplateRows=L.rows;
   const rc={0:'',90:'r90','-90':'rn90',180:'r180'};
   b.innerHTML=game.players.map((p,i)=>{
@@ -634,7 +684,7 @@ function renderBoard(){
         <div class="zone minus" data-i="${i}" data-d="-1"><span>−</span></div>
         <div class="zone plus" data-i="${i}" data-d="1"><span>+</span></div>
         <div class="info">
-          <div class="pname">${esc(p.name)}</div>
+          ${pnameHtml(p)}
           <div class="life" id="life${i}"></div>
           ${UNITS[game.tcg]?`<div class="unit">${UNITS[game.tcg]}</div>`:''}
           <div class="delta" id="delta${i}"></div>
@@ -651,6 +701,7 @@ function renderBoard(){
 const SPLIT_TILES=[[0,'top','b',90],[0,'bot','a',90],[1,'bot','c',-90],[1,'top','d',-90]];
 function renderSplitBoard(){
   const b=$('#board'),D=DUAL[game.tcg],rc={90:'r90','-90':'rn90'};
+  setBg(b);
   b.style.gridTemplateAreas='"b c" "a d"';b.style.gridTemplateColumns='1fr 1fr';b.style.gridTemplateRows='1fr 1fr';
   b.innerHTML=SPLIT_TILES.map(([i,pos,area,rot])=>{
     const p=game.players[i],[k,label]=D[pos],main=pos==='top';
@@ -659,7 +710,7 @@ function renderSplitBoard(){
         <div class="zone minus" data-i="${i}" data-d="-1" data-k="${k}"><span>−</span></div>
         <div class="zone plus" data-i="${i}" data-d="1" data-k="${k}"><span>+</span></div>
         <div class="info">
-          <div class="pname">${esc(p.name)}</div>
+          ${pnameHtml(p)}
           <div class="life" id="${k==='life'?'life':k}${i}"></div>
           <div class="unit">${label}</div>
           <div class="delta" id="delta${k==='life'?'':k}${i}"></div>
@@ -671,12 +722,14 @@ function renderSplitBoard(){
   for(let i=0;i<game.players.length;i++){deltas[i]={life:{sum:0,t:null},chakra:{sum:0,t:null}};updateLife(i)}
   updateBadges();
 }
+/* Fond d'écran propre à chaque jeu */
+function setBg(b){b.style.setProperty('--art',(window.TCG_BG&&TCG_BG[game.tcg])||'none')}
 function dualPanel(i,p){
   const D=DUAL[game.tcg],half=(pos,[k,label])=>`<div class="half ${pos}">
     <div class="zone minus" data-i="${i}" data-d="-1" data-k="${k}"><span>−</span></div>
     <div class="zone plus" data-i="${i}" data-d="1" data-k="${k}"><span>+</span></div>
     <div class="info">
-      ${pos==='top'?`<div class="pname">${esc(p.name)}</div>`:''}
+      ${pos==='top'?pnameHtml(p):''}
       <div class="life" id="${k==='life'?'life':k}${i}"></div>
       <div class="unit">${label}</div>
       <div class="delta" id="delta${k==='life'?'':k}${i}"></div>
@@ -733,6 +786,7 @@ function updateBadges(){
     if(p.city)h+='<span class="badge city">🏛️ Bénédiction</span>';
     if(p.might>0)h+=`<span class="badge might">💪 Puissance ×${p.might}</span>`;
     if(p.agility>0)h+=`<span class="badge agi">🏃 Agilité ×${p.agility}</span>`;
+    if(game.tcg==='naruto'){const m=p.missions||0;h+=`<span class="badge mis">📜 ${m} pt${m>1?'s':''} de mission</span>`}
     $('#badges'+i).innerHTML=h;
   });
 }
@@ -765,14 +819,14 @@ function closeModal(){modalOv.classList.remove('show');clearInterval(rollT)}
 function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show')}
 
 const ACTIONS={
-  monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],
+  monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],mission:['📜','Points de mission'],
   win:['🏆','Victoire'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
 };
 const MENUS={
   magic:['monarch','city','log','d20','coin','first','win','reset'],
   fab:['tokens','coin','first','d20','win','reset'],
   lorcana:['coin','first','d20','win','reset'],
-  naruto:['coin','first','d20','win','reset'],
+  naruto:['mission','coin','first','d20','win','reset'],
   ygo:['calc','coin','d6','first','win','reset'],
   sw:['coin','first','d20','win','reset']
 };
@@ -783,7 +837,7 @@ function renderMenu(){
 function bindActions(){
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     sheetOv.classList.remove('show');
-    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
+    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,mission:missionModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
       first:()=>setTimeout(pickFirst,150),reset:resetModal,
       edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
   });
@@ -802,6 +856,23 @@ function tokensModal(){
       saveGame();updateBadges();vibrate(6);draw();
     });
     $('#tokOk').onclick=closeModal;
+  };
+  draw();
+}
+
+/* Naruto : points de mission */
+function missionModal(){
+  const draw=()=>{
+    openModal(`<h3>📜 Points de mission</h3><p class="m">Touche + ou − pour compter les points de mission de chaque joueur.</p>
+      ${game.players.map((p,i)=>`<div class="tokname">${avTag(p.avatar)||`<span class="dot" style="background:${COLORS[i][0]}"></span>`}${esc(p.name)}</div>
+        <div class="tokrow"><span class="l">📜 Points de mission</span><button class="tb" data-i="${i}" data-d="-1">−</button><b>${p.missions||0}</b><button class="tb" data-i="${i}" data-d="1">+</button></div>`).join('')}
+      <button class="btn" id="misOk">Terminé</button>`);
+    document.querySelectorAll('#modal .tb').forEach(b=>b.onclick=()=>{
+      const i=+b.dataset.i,p=game.players[i],before=p.missions||0;p.missions=Math.max(0,before+(+b.dataset.d));
+      if(p.missions!==before)logChange(i,'missions',p.missions-before,true);
+      saveGame();updateBadges();vibrate(6);draw();
+    });
+    $('#misOk').onclick=closeModal;
   };
   draw();
 }
@@ -837,12 +908,13 @@ function logChange(i,k,d,fresh){
   if(game.log.length>500)game.log.splice(0,game.log.length-500);
   saveGame();
 }
+const LOGK={chakra:'🌀',missions:'📜'};
 function logModal(){
   const L=(game.log||[]).filter(e=>e.d!==0).slice().reverse();
   const tm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   openModal(`<h3>📋 Journal des points de vie</h3><p class="m">Les changements les plus récents en haut.</p>
     <div class="log">${L.length?L.map(e=>`<div class="lrow"><span class="dot" style="background:${COLORS[e.p][0]}"></span>
-      <span class="ln">${esc(game.players[e.p].name)}</span>
+      <span class="ln">${esc(game.players[e.p].name)}${LOGK[e.k]?` <small style="color:var(--muted)">${LOGK[e.k]}</small>`:''}</span>
       <span class="ld" style="color:${e.d>0?'#7ee08f':'#ff8a8a'}">${e.d>0?'+':''}${e.d}</span>
       <span class="lv">→ ${e.v}</span><span class="lt">${tm(e.t)}</span></div>`).join('')
       :'<div class="empty" style="padding:16px">Aucun changement pour l\'instant.</div>'}</div>
@@ -876,7 +948,7 @@ function winModal(){
 }
 function scoreText(p){
   if(game.tcg==='lorcana')return p.life+' lore';
-  if(game.tcg==='naruto')return p.life+' PV · '+(p.chakra||0)+' chakra';
+  if(game.tcg==='naruto')return p.life+' PV · '+(p.chakra||0)+' chakra · '+(p.missions||0)+' pts mission';
   if(game.tcg==='ygo')return p.life+' LP';
   return p.life+' PV';
 }
@@ -908,7 +980,7 @@ $('#histClear').onclick=()=>{
 };
 
 function playerButtons(isOn,mark){
-  return game.players.map((p,i)=>`<button class="pbtn ${isOn(i)?'on':''}" data-i="${i}"><span class="dot" style="background:${COLORS[i][0]}"></span>${esc(p.name)}<span class="st">${isOn(i)?mark:''}</span></button>`).join('');
+  return game.players.map((p,i)=>`<button class="pbtn ${isOn(i)?'on':''}" data-i="${i}">${avTag(p.avatar)||`<span class="dot" style="background:${COLORS[i][0]}"></span>`}${esc(p.name)}<span class="st">${isOn(i)?mark:''}</span></button>`).join('');
 }
 function monarchModal(){
   openModal(`<h3>👑 Monarque</h3><p class="m">Qui est le monarque ? Il pioche une carte supplémentaire à sa fin de tour.</p>
@@ -962,13 +1034,13 @@ function resetModal(){
   const msg={magic:'Les points de vie reviennent à leur valeur de départ. Monarque, bénédiction et journal sont effacés.',
     fab:'Les points de vie reviennent à leur valeur de départ. Les jetons Puissance et Agilité sont retirés.',
     lorcana:'Le lore de chaque joueur revient à 0.',
-    naruto:'La vie revient à sa valeur de départ et le chakra à 0.',
+    naruto:'La vie revient à sa valeur de départ, le chakra et les points de mission à 0.',
     ygo:'Les LP reviennent à leur valeur de départ.',
     sw:'Les points de vie reviennent à leur valeur de départ.'}[game.tcg];
   openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{
-    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;game.recorded=false;game.askedWin=false;game.log=[];saveGame();closeModal();renderBoard();
+    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto'){p.chakra=0;p.missions=0}});game.monarch=null;game.recorded=false;game.askedWin=false;game.log=[];saveGame();closeModal();renderBoard();
     if(randomFirstOn())setTimeout(pickFirst,350);
   };
   $('#rNo').onclick=closeModal;

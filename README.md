@@ -11,6 +11,10 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 | Yu-Gi-Oh! | ✅ Disponible |
 | Star Wars Unlimited | ✅ Disponible |
 
+## Pour tous les jeux
+- Avatar au choix pour chaque joueur au lancement de la partie (10 avatars : Mage, Chevalier, Ninja, Dragon, Robot, Renard, Hibou, Pirate, Fantôme, Lion)
+- Fond d'écran propre à chaque jeu sur le compteur de points de vie
+
 ## Magic
 - Formats : Standard (2 joueurs), Commander (2 à 5), Duel Commander (2), Archenemy (3 à 5)
 - Points de vie de départ : 20, 25, 30, 40 ou personnalisé (vie de l'Archenemy séparée : 30 à 60)
@@ -27,7 +31,8 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 
 ## Naruto Mythos
 - 2 joueurs nommés
-- Compteur de chakra de 0 à 100
+- Compteur de vie et compteur de chakra de 0 à 100
+- Points de mission comptés depuis le menu de partie (📜), affichés sous le nom de chaque joueur
 
 ## Yu-Gi-Oh!
 - Normal (8000 LP) ou Speed Duel (4000 LP)
