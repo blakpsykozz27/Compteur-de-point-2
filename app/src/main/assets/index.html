@@ -147,6 +147,17 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .inner.side .half{top:0;bottom:0;height:auto;width:50%}
 .inner.side .half.top{left:0;right:auto}
 .inner.side .half.bot{right:0;left:auto;border-top:0;border-left:2px solid rgba(255,255,255,.14)}
+.histbtn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;border-radius:14px;background:var(--panel);margin-bottom:16px;font-weight:700;font-size:15px;text-align:left}
+.histbtn small{margin-left:auto;color:var(--muted);font-weight:600}
+.rank{display:flex;flex-wrap:wrap;gap:8px}
+.rk{padding:8px 12px;border-radius:12px;background:var(--panel);font-weight:700}
+.rk b{color:var(--gold);margin-left:6px}
+.hitem{padding:12px 14px;border-radius:14px;background:var(--panel);margin-bottom:8px}
+.hitem .hh{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.hitem .hw{font-weight:800;font-size:16px}
+.hitem .hp{font-size:13px;color:var(--muted);margin-top:2px}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+.btn.danger{background:#2a1416;color:#ff8a8a}
 @media (orientation:landscape){
   .scroll{padding:16px 24px 100px}
   .tcgs{grid-template-columns:repeat(3,1fr)}
@@ -167,7 +178,21 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
     <h1>Compteur de Points</h1>
     <p class="sub">Choisis ton jeu de cartes</p>
     <div id="resumeSlot"></div>
+    <button class="histbtn" id="histBtn">📜 Historique des parties<small id="histCount"></small></button>
     <div class="tcgs" id="tcgs"></div>
+  </div>
+</section>
+
+<!-- HISTORIQUE -->
+<section class="screen" id="history">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Historique des parties</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <p class="note">Seules les parties où tous les joueurs ont entré leur nom sont enregistrées.</p>
+    <h2>Victoires par joueur</h2>
+    <div class="rank" id="histRank"></div>
+    <h2>Parties</h2>
+    <div id="histList"></div>
+    <button class="btn danger" id="histClear">Effacer l'historique</button>
   </div>
 </section>
 
@@ -368,6 +393,7 @@ function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
   current=id;
   if(id==='home')renderHome();
+  if(id==='history')renderHistory();
   if(id==='setup')renderSetup();
   if(id==='setupFab')renderFabSetup();
   if(id==='setupLor')renderLorSetup();
@@ -394,7 +420,9 @@ function renderHome(){
   if(g&&!g.tcg)g.tcg='magic';
   $('#resumeSlot').innerHTML=g?`<button class="resume" id="resumeBtn"><span style="font-size:28px">▶</span><span><b>Reprendre la partie</b><small>${esc(gameLabel(g))} · ${g.players.map(p=>esc(p.name)).join(', ')}</small></span></button>`:'';
   if(g)$('#resumeBtn').onclick=()=>{game=g;startBoard();};
+  const nh=load('cdp_history',[]).length;$('#histCount').textContent=nh?nh+' partie'+(nh>1?'s':''):'';
 }
+$('#histBtn').onclick=()=>show('history');
 
 /* ---------- Configuration ---------- */
 let setup=Object.assign({format:'commander',count:4,life:40,custom:false,archLife:40,names:['','','','',''],random:true},load('cdp_setup',{}));
@@ -440,7 +468,7 @@ $('#startBtn').onclick=()=>{
   game={tcg:'magic',format:setup.format,start:setup.life,archLife:setup.archLife,monarch:null,
     players:Array.from({length:setup.count},(_,i)=>{
       const life=isArch&&i===0?setup.archLife:setup.life;
-      return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,city:false};
+      return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(setup.names[i]||'').trim(),life,start:life,city:false};
     })};
   saveGame();startBoard();
   if(setup.random)setTimeout(pickFirst,450);
@@ -467,7 +495,7 @@ $('#fabRandToggle').onclick=()=>{fabSetup.random=!fabSetup.random;saveFabSetup()
 $('#fabStartBtn').onclick=()=>{
   game={tcg:'fab',format:fabSetup.format,
     players:[0,1].map(i=>{const life=fabSetup.lives[i]||FAB_FORMATS[fabSetup.format].life;
-      return {name:(fabSetup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,might:0,agility:0}})};
+      return {name:(fabSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(fabSetup.names[i]||'').trim(),life,start:life,might:0,agility:0}})};
   saveGame();startBoard();
   if(fabSetup.random)setTimeout(pickFirst,450);
 };
@@ -490,7 +518,7 @@ function renderLorSetup(){
 $('#lorRandToggle').onclick=()=>{lorSetup.random=!lorSetup.random;saveLorSetup();$('#lorRandSw').classList.toggle('on',lorSetup.random)};
 $('#lorStartBtn').onclick=()=>{
   game={tcg:'lorcana',
-    players:Array.from({length:lorSetup.count},(_,i)=>({name:(lorSetup.names[i]||'').trim()||`Joueur ${i+1}`,life:0,start:0}))};
+    players:Array.from({length:lorSetup.count},(_,i)=>({name:(lorSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(lorSetup.names[i]||'').trim(),life:0,start:0}))};
   saveGame();startBoard();
   if(lorSetup.random)setTimeout(pickFirst,450);
 };
@@ -508,7 +536,7 @@ function renderNarSetup(){
 }
 $('#narRandToggle').onclick=()=>{narSetup.random=!narSetup.random;saveNarSetup();$('#narRandSw').classList.toggle('on',narSetup.random)};
 $('#narStartBtn').onclick=()=>{
-  game={tcg:'naruto',players:[0,1].map(i=>{const life=narSetup.lives[i]||NARUTO_LIFE;return {name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,chakra:0}})};
+  game={tcg:'naruto',players:[0,1].map(i=>{const life=narSetup.lives[i]||NARUTO_LIFE;return {name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(narSetup.names[i]||'').trim(),life,start:life,chakra:0}})};
   saveGame();startBoard();
   if(narSetup.random)setTimeout(pickFirst,450);
 };
@@ -533,10 +561,10 @@ function renderYgoSetup(){
 }
 $('#ygoRandToggle').onclick=()=>{ygoSetup.random=!ygoSetup.random;saveYgoSetup();$('#ygoRandSw').classList.toggle('on',ygoSetup.random)};
 $('#ygoStartBtn').onclick=()=>{
-  const life=YGO_FORMATS[ygoSetup.format].life,nm=i=>(ygoSetup.names[i]||'').trim()||`Duelliste ${i+1}`;
+  const life=YGO_FORMATS[ygoSetup.format].life,nm=i=>(ygoSetup.names[i]||'').trim()||`Duelliste ${i+1}`,ok=i=>!!(ygoSetup.names[i]||'').trim();
   const players=ygoSetup.mode==='2v2'
-    ?[0,1].map(t=>({name:`${nm(t*2)} & ${nm(t*2+1)}`,life,start:life}))
-    :[0,1].map(i=>({name:nm(i),life,start:life}));
+    ?[0,1].map(t=>({name:`${nm(t*2)} & ${nm(t*2+1)}`,named:ok(t*2)&&ok(t*2+1),life,start:life}))
+    :[0,1].map(i=>({name:nm(i),named:ok(i),life,start:life}));
   game={tcg:'ygo',format:ygoSetup.format,mode:ygoSetup.mode,players};
   saveGame();startBoard();
   if(ygoSetup.random)setTimeout(pickFirst,450);
@@ -553,7 +581,7 @@ function renderSwSetup(){
 }
 $('#swRandToggle').onclick=()=>{swSetup.random=!swSetup.random;saveSwSetup();$('#swRandSw').classList.toggle('on',swSetup.random)};
 $('#swStartBtn').onclick=()=>{
-  game={tcg:'sw',players:[0,1].map(i=>{const life=swSetup.lives[i]||SW_LIFE;return {name:(swSetup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life}})};
+  game={tcg:'sw',players:[0,1].map(i=>{const life=swSetup.lives[i]||SW_LIFE;return {name:(swSetup.names[i]||'').trim()||`Joueur ${i+1}`,named:!!(swSetup.names[i]||'').trim(),life,start:life}})};
   saveGame();startBoard();
   if(swSetup.random)setTimeout(pickFirst,450);
 };
@@ -663,7 +691,7 @@ function changeLife(i,d,k='life'){
     d=p[k]-before;if(d===0)return;
   }
   if(game.tcg==='lorcana'&&before<LORE_GOAL&&p.life>=LORE_GOAL){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${LORE_GOAL} lore !`,3000)}
-  updateLife(i);saveGame();vibrate(8);
+  updateLife(i);saveGame();vibrate(8);checkWinner(k);
   const D=deltas[i][k],el=$('#delta'+(k==='life'?'':k)+i);D.sum+=d;
   el.textContent=(D.sum>0?'+':'')+D.sum;el.style.color=D.sum>=0?'#b9ffc4':'#ffc2c2';
   el.classList.toggle('show',D.sum!==0);clearTimeout(D.t);
@@ -721,15 +749,15 @@ function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show'
 
 const ACTIONS={
   monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],
-  d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
+  win:['🏆','Victoire'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
 };
 const MENUS={
-  magic:['monarch','city','d20','coin','first','reset'],
-  fab:['tokens','coin','first','d20','reset'],
-  lorcana:['coin','first','d20','reset'],
-  naruto:['coin','first','d20','reset'],
-  ygo:['calc','coin','d6','first','reset'],
-  sw:['coin','first','d20','reset']
+  magic:['monarch','city','d20','coin','first','win','reset'],
+  fab:['tokens','coin','first','d20','win','reset'],
+  lorcana:['coin','first','d20','win','reset'],
+  naruto:['coin','first','d20','win','reset'],
+  ygo:['calc','coin','d6','first','win','reset'],
+  sw:['coin','first','d20','win','reset']
 };
 function renderMenu(){
   $('#menuGrid').innerHTML=MENUS[game.tcg].map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
@@ -738,7 +766,7 @@ function renderMenu(){
 function bindActions(){
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     sheetOv.classList.remove('show');
-    ({monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
+    ({win:winModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
       first:()=>setTimeout(pickFirst,150),reset:resetModal,
       edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
   });
@@ -781,6 +809,63 @@ function calcModal(){
   };
   draw();
 }
+
+/* ---------- Historique des victoires ---------- */
+const allNamed=()=>game.players.every(p=>p.named);
+function checkWinner(k){
+  if(!game||game.recorded||game.askedWin||!allNamed()||game.players.length<2)return;
+  let w=-1;
+  if(game.tcg==='lorcana'){w=game.players.findIndex(p=>p.life>=LORE_GOAL)}
+  else if(k==='life'){const alive=game.players.map((p,i)=>p.life>0?i:-1).filter(i=>i>=0);if(alive.length===1)w=alive[0]}
+  if(w<0)return;
+  game.askedWin=true;saveGame();
+  setTimeout(()=>{
+    openModal(`<h3>🏆 ${esc(game.players[w].name)} a gagné ?</h3><p class="m">La victoire sera ajoutée à l'historique.</p>
+      <button class="btn" id="wYes">Enregistrer la victoire</button><button class="btn ghost" id="wNo">Pas encore</button>`);
+    $('#wYes').onclick=()=>{closeModal();recordWin(w)};$('#wNo').onclick=closeModal;
+  },900);
+}
+function winModal(){
+  if(game.recorded){toast('Cette partie est déjà enregistrée.<br><small style="color:var(--muted);font-weight:600">Recommence une partie pour en enregistrer une autre.</small>',3000);return}
+  if(!allNamed()){toast('Partie non enregistrée<br><small style="color:var(--muted);font-weight:600">Entre le nom de tous les joueurs (« Modifier ») pour garder l\'historique.</small>',3500);return}
+  openModal(`<h3>🏆 Qui a gagné ?</h3><p class="m">La victoire sera ajoutée à l'historique.</p>
+    <div class="plist">${playerButtons(()=>false,'')}</div>
+    <button class="btn ghost" id="wCancel">Annuler</button>`);
+  document.querySelectorAll('#modal .pbtn').forEach(b=>b.onclick=()=>{closeModal();recordWin(+b.dataset.i)});
+  $('#wCancel').onclick=closeModal;
+}
+function scoreText(p){
+  if(game.tcg==='lorcana')return p.life+' lore';
+  if(game.tcg==='naruto')return p.life+' PV · '+(p.chakra||0)+' chakra';
+  if(game.tcg==='ygo')return p.life+' LP';
+  return p.life+' PV';
+}
+function recordWin(w){
+  if(game.recorded)return;
+  const h=load('cdp_history',[]);
+  h.unshift({date:Date.now(),label:gameLabel(game),winner:game.players[w].name,
+    players:game.players.map(p=>({name:p.name,score:scoreText(p)}))});
+  store('cdp_history',h.slice(0,300));
+  game.recorded=true;game.askedWin=true;saveGame();
+  vibrate(80);toast(`🏆 Victoire de ${esc(game.players[w].name)} enregistrée`,2600);
+}
+function renderHistory(){
+  const h=load('cdp_history',[]);
+  const wins={};h.forEach(e=>e.winner.split(' & ').forEach(n=>wins[n]=(wins[n]||0)+1));
+  const rk=Object.entries(wins).sort((a,b)=>b[1]-a[1]);
+  $('#histRank').innerHTML=rk.length?rk.map(([n,c])=>`<span class="rk">${esc(n)}<b>${c}</b></span>`).join(''):'<span class="note" style="margin:0">Aucune victoire pour l\'instant.</span>';
+  const fmt=d=>new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+new Date(d).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  $('#histList').innerHTML=h.length?h.map(e=>`<div class="hitem"><div class="hh"><span>${esc(e.label)}</span><span>${fmt(e.date)}</span></div>
+    <div class="hw">🏆 ${esc(e.winner)}</div>
+    <div class="hp">${e.players.map(p=>`${esc(p.name)} (${esc(p.score)})`).join(' · ')}</div></div>`).join('')
+    :'<div class="empty">Aucune partie enregistrée.<br>Entre le nom des joueurs puis déclare le vainqueur avec 🏆 dans le menu de partie.</div>';
+  $('#histClear').style.display=h.length?'block':'none';
+}
+$('#histClear').onclick=()=>{
+  openModal(`<h3>Effacer l'historique ?</h3><p class="m">Toutes les parties enregistrées seront supprimées. C'est définitif.</p>
+    <button class="btn red" id="hcOk">Tout effacer</button><button class="btn ghost" id="hcNo">Annuler</button>`);
+  $('#hcOk').onclick=()=>{store('cdp_history',null);closeModal();renderHistory()};$('#hcNo').onclick=closeModal;
+};
 
 function playerButtons(isOn,mark){
   return game.players.map((p,i)=>`<button class="pbtn ${isOn(i)?'on':''}" data-i="${i}"><span class="dot" style="background:${COLORS[i][0]}"></span>${esc(p.name)}<span class="st">${isOn(i)?mark:''}</span></button>`).join('');
@@ -843,7 +928,7 @@ function resetModal(){
   openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{
-    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;saveGame();closeModal();renderBoard();
+    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;game.recorded=false;game.askedWin=false;saveGame();closeModal();renderBoard();
     if(randomFirstOn())setTimeout(pickFirst,350);
   };
   $('#rNo').onclick=closeModal;
@@ -854,7 +939,7 @@ window.handleBack=function(){
   if(modalOv.classList.contains('show')){closeModal();return true}
   if(sheetOv.classList.contains('show')){sheetOv.classList.remove('show');return true}
   if(current==='game'){sheetOv.classList.add('show');return true}
-  if(current.startsWith('setup')){show('home');return true}
+  if(current.startsWith('setup')||current==='history'){show('home');return true}
   return false;
 };
 
