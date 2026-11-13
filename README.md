@@ -31,7 +31,7 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 
 ## Naruto Mythos
 - 2 joueurs nommés
-- Compteur de vie et compteur de chakra de 0 à 100
+- Compteur de points (départ à 0) et compteur de chakra de 0 à 100
 - Points de mission comptés depuis le menu de partie (📜), affichés sous le nom de chaque joueur
 
 ## Yu-Gi-Oh!
