@@ -10,6 +10,7 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 | Naruto Mythos | ✅ Disponible |
 | Yu-Gi-Oh! | ✅ Disponible |
 | Star Wars Unlimited | ✅ Disponible |
+| Riftbound | ✅ Disponible |
 
 ## Pour tous les jeux
 - Avatar au choix pour chaque joueur au lancement de la partie (10 avatars : Mage, Chevalier, Ninja, Dragon, Robot, Renard, Hibou, Pirate, Fantôme, Lion)
@@ -42,6 +43,11 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 ## Star Wars Unlimited
 - 2 joueurs nommés
 - 30 PV par défaut, modifiables pour chaque joueur
+
+## Riftbound
+- Duel (2 joueurs, 8 points), Chacun pour soi (3 ou 4 joueurs, 8 points), 2 contre 2 (points partagés par équipe, 11 points)
+- Compteur de points de 0 à l'objectif, victoire annoncée à l'objectif
+- Menu de partie : journal, pile ou face, qui commence, dé 20, victoire, recommencer
 
 Toucher = ±1, appui long = ±10 (sauf Yu-Gi-Oh!). La partie est sauvegardée automatiquement.
 

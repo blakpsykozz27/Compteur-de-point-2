@@ -51,5 +51,15 @@ lorcana:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 <ellipse cx="45" cy="52" rx="3" ry="5" fill="#fff" opacity=".55"/>
 <path d="M78 14 L80 20 L86 22 L80 24 L78 30 L76 24 L70 22 L76 20 Z" fill="#ffffff"/>
 <path d="M22 72 L23.3 76 L27 77.3 L23.3 78.6 L22 82.6 L20.7 78.6 L17 77.3 L20.7 76 Z" fill="#cdf6ff"/>
-<circle cx="84" cy="48" r="1.6" fill="#fff"/><circle cx="16" cy="40" r="1.3" fill="#fff"/></svg>`
+<circle cx="84" cy="48" r="1.6" fill="#fff"/><circle cx="16" cy="40" r="1.3" fill="#fff"/></svg>`,
+/* Riftbound : faille lumineuse dans un hexagone, éclats de cristal */
+riftbound:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="rbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bff6ff"/><stop offset="1" stop-color="#35a7e0"/></linearGradient>
+<radialGradient id="rbr" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#8ff0ff"/><stop offset="1" stop-color="#8ff0ff" stop-opacity="0"/></radialGradient></defs>
+<circle cx="50" cy="48" r="30" fill="url(#rbr)" opacity=".55"/>
+<path d="M50 12 L82 30 L82 66 L50 84 L18 66 L18 30 Z" fill="none" stroke="url(#rbg)" stroke-width="4"/>
+<path d="M50 22 L73 35 L73 61 L50 74 L27 61 L27 35 Z" fill="none" stroke="#bff6ff" stroke-width="1.4" opacity=".7"/>
+<path d="M53 24 L44 42 L54 46 L42 72 L60 44 L50 40 L58 24 Z" fill="#ffffff"/>
+<path d="M14 20 L19 14 L22 22 Z M84 80 L90 74 L91 84 Z M86 18 L90 22 L85 25 Z M10 78 L15 82 L10 86 Z" fill="url(#rbg)"/>
+<circle cx="86" cy="46" r="1.6" fill="#fff"/><circle cx="14" cy="50" r="1.3" fill="#fff"/></svg>`
 };

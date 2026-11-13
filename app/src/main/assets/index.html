@@ -322,6 +322,25 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
   <button class="cta" id="swStartBtn">Lancer la partie</button>
 </section>
 
+<!-- CONFIGURATION RIFTBOUND -->
+<section class="screen" id="setupRb">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Riftbound — Nouvelle partie</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <h2>Format</h2>
+    <div class="formats" id="rbFormats"></div>
+    <div id="rbCountBox">
+      <h2>Nombre de joueurs</h2>
+      <div class="chips" id="rbCounts"></div>
+    </div>
+    <h2>Joueurs</h2>
+    <div id="rbNames"></div>
+    <p class="note" id="rbNote"></p>
+    <h2>Début de partie</h2>
+    <button class="toggle" id="rbRandToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="rbRandSw"></span></button>
+  </div>
+  <button class="cta" id="rbStartBtn">Lancer la partie</button>
+</section>
+
 <!-- PARTIE -->
 <section class="screen" id="game">
   <div id="board"></div>
@@ -352,7 +371,8 @@ const TCGS=[
   {id:'sw',name:'Star Wars',sub:'Unlimited',sym:'✧',g:['#0b1530','#2d5bd1'],ready:true},
   {id:'naruto',name:'Naruto Mythos',sym:'◎',g:['#3a1a05','#e0701c'],ready:true},
   {id:'ygo',name:'Yu-Gi-Oh!',sym:'◈',g:['#1d0f33','#7b3fd0'],ready:true},
-  {id:'lorcana',name:'Lorcana',sym:'❖',g:['#0c2430','#1c8fa8'],ready:true}
+  {id:'lorcana',name:'Lorcana',sym:'❖',g:['#0c2430','#1c8fa8'],ready:true},
+  {id:'riftbound',name:'Riftbound',sym:'⬢',g:['#0a1a33','#1f9fb8'],ready:true}
 ];
 const FORMATS={
   standard:{label:'Standard',min:2,max:2,def:2,life:20,desc:'1 contre 1 · 2 joueurs'},
@@ -367,6 +387,11 @@ const FAB_FORMATS={
   silver:{label:'Silver Age',life:20,desc:'20 PV'}
 };
 const LORE_GOAL=20;
+const RB_FORMATS={
+  duel:{label:'Duel',desc:'1 contre 1 · 8 points',goal:8},
+  ffa:{label:'Chacun pour soi',desc:'3 ou 4 joueurs · 8 points',goal:8},
+  team:{label:'2 contre 2',desc:'Par équipe · 11 points',goal:11}
+};
 const CHAKRA_MAX=100;
 const YGO_FORMATS={
   normal:{label:'Normal',life:8000,desc:'8000 LP'},
@@ -377,11 +402,14 @@ const YGO_MODES={
   '2v2':{label:'2 contre 2',desc:'Tag Duel · LP partagés par équipe'}
 };
 const SW_LIFE=30;
-const SETUP_SCREEN={magic:'setup',fab:'setupFab',lorcana:'setupLor',naruto:'setupNaruto',ygo:'setupYgo',sw:'setupSw'};
+const SETUP_SCREEN={magic:'setup',fab:'setupFab',lorcana:'setupLor',naruto:'setupNaruto',ygo:'setupYgo',sw:'setupSw',riftbound:'setupRb'};
 /* Pas du toucher / de l'appui long, et bornes min-max */
 const STEPS={ygo:[100,1000]};
-const RANGES={lorcana:{life:[0,null]},naruto:{life:[0,null],chakra:[0,CHAKRA_MAX]}};
+const RANGES={lorcana:{life:[0,null]},riftbound:{life:[0,null]},naruto:{life:[0,null],chakra:[0,CHAKRA_MAX]}};
 const UNITS={lorcana:`◆ lore · objectif 20`,ygo:'LP'};
+/* Jeux qui se gagnent en atteignant un score (Lorcana, Riftbound) */
+function goalOf(g){return g.tcg==='lorcana'?LORE_GOAL:g.tcg==='riftbound'?(g.goal||8):null}
+function unitOf(g){return g.tcg==='riftbound'?`⬢ points · objectif ${goalOf(g)}`:UNITS[g.tcg]}
 /* Jeux avec deux compteurs par joueur */
 const DUAL={naruto:{top:['life','⭐ points'],bot:['chakra','🌀 chakra']}};
 const ARCH_LIVES=[30,40,50,60];
@@ -430,6 +458,7 @@ function show(id){
   if(id==='setupNaruto')renderNarSetup();
   if(id==='setupYgo')renderYgoSetup();
   if(id==='setupSw')renderSwSetup();
+  if(id==='setupRb')renderRbSetup();
   keepAwake(id==='game');
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
@@ -654,15 +683,52 @@ $('#swStartBtn').onclick=()=>{
   if(swSetup.random)setTimeout(pickFirst,450);
 };
 
+/* ---------- Configuration Riftbound ---------- */
+let rbSetup=Object.assign({format:'duel',count:3,names:['','','',''],random:true},load('cdp_rb_setup',{}));
+function saveRbSetup(){store('cdp_rb_setup',rbSetup)}
+function rbPlayers(){return rbSetup.format==='duel'?2:rbSetup.format==='team'?4:rbSetup.count}
+function renderRbSetup(){
+  const F=RB_FORMATS[rbSetup.format];
+  $('#rbFormats').innerHTML=Object.entries(RB_FORMATS).map(([k,v])=>`<button class="fmt ${k===rbSetup.format?'on':''}" data-f="${k}"><b>${v.label}</b><small>${v.desc}</small></button>`).join('');
+  document.querySelectorAll('#rbFormats .fmt').forEach(b=>b.onclick=()=>{rbSetup.format=b.dataset.f;saveRbSetup();renderRbSetup()});
+  $('#rbCountBox').style.display=rbSetup.format==='ffa'?'block':'none';
+  $('#rbCounts').innerHTML=[3,4].map(n=>`<button class="chip ${n===rbSetup.count?'on':''}" data-n="${n}">${n}</button>`).join('');
+  document.querySelectorAll('#rbCounts .chip').forEach(b=>b.onclick=()=>{rbSetup.count=+b.dataset.n;saveRbSetup();renderRbSetup()});
+  const n=rbPlayers(),team=rbSetup.format==='team';
+  defAv(rbSetup,n);
+  const row=i=>`<div class="prow">${avBtn(i,rbSetup.avatars[i],COLORS[team?Math.floor(i/2):i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(rbSetup.names[i]||'')}"></div>`;
+  $('#rbNames').innerHTML=team
+    ?`<div class="team">Équipe 1</div>${row(0)}${row(1)}<div class="team">Équipe 2</div>${row(2)}${row(3)}`
+    :Array.from({length:n},(_,i)=>row(i)).join('');
+  document.querySelectorAll('#rbNames input').forEach(inp=>inp.oninput=()=>{rbSetup.names[+inp.dataset.i]=inp.value;saveRbSetup()});
+  bindAv('#rbNames',rbSetup,saveRbSetup,renderRbSetup);
+  $('#rbNote').textContent=team
+    ?`Chaque équipe partage ses points. La première équipe à ${F.goal} points gagne.`
+    :`Chaque joueur part de 0 point. Le premier à ${F.goal} points gagne.`;
+  $('#rbRandSw').classList.toggle('on',rbSetup.random);
+}
+$('#rbRandToggle').onclick=()=>{rbSetup.random=!rbSetup.random;saveRbSetup();$('#rbRandSw').classList.toggle('on',rbSetup.random)};
+$('#rbStartBtn').onclick=()=>{
+  const F=RB_FORMATS[rbSetup.format],nm=i=>(rbSetup.names[i]||'').trim()||`Joueur ${i+1}`,ok=i=>!!(rbSetup.names[i]||'').trim();
+  defAv(rbSetup,rbPlayers());
+  const players=rbSetup.format==='team'
+    ?[0,1].map(t=>({name:`${nm(t*2)} & ${nm(t*2+1)}`,named:ok(t*2)&&ok(t*2+1),avatar:rbSetup.avatars[t*2],life:0,start:0}))
+    :Array.from({length:rbPlayers()},(_,i)=>({name:nm(i),named:ok(i),avatar:rbSetup.avatars[i],life:0,start:0}));
+  game={tcg:'riftbound',format:rbSetup.format,goal:F.goal,players};
+  saveGame();startBoard();
+  if(rbSetup.random)setTimeout(pickFirst,450);
+};
+
 function gameLabel(g){
   if(g.tcg==='fab')return 'Flesh and Blood · '+FAB_FORMATS[g.format].label;
   if(g.tcg==='lorcana')return 'Lorcana';
+  if(g.tcg==='riftbound')return 'Riftbound · '+RB_FORMATS[g.format].label;
   if(g.tcg==='naruto')return 'Naruto Mythos';
   if(g.tcg==='ygo')return 'Yu-Gi-Oh! · '+YGO_FORMATS[g.format].label+(g.mode==='2v2'?' · 2 contre 2':'');
   if(g.tcg==='sw')return 'Star Wars Unlimited';
   return 'Magic · '+FORMATS[g.format].label;
 }
-function randomFirstOn(){return ({magic:setup,fab:fabSetup,lorcana:lorSetup,naruto:narSetup,ygo:ygoSetup,sw:swSetup}[game.tcg]||setup).random}
+function randomFirstOn(){return ({magic:setup,fab:fabSetup,lorcana:lorSetup,naruto:narSetup,ygo:ygoSetup,sw:swSetup,riftbound:rbSetup}[game.tcg]||setup).random}
 
 /* ---------- Partie ---------- */
 let game=null;
@@ -691,7 +757,7 @@ function renderBoard(){
         <div class="info">
           ${pnameHtml(p)}
           <div class="life" id="life${i}"></div>
-          ${UNITS[game.tcg]?`<div class="unit">${UNITS[game.tcg]}</div>`:''}
+          ${unitOf(game)?`<div class="unit">${unitOf(game)}</div>`:''}
           <div class="delta" id="delta${i}"></div>
           <div class="badges" id="badges${i}"></div>
           <div class="callout" id="call${i}"></div>
@@ -749,7 +815,7 @@ function updateLife(i){
   const p=game.players[i];setNum($('#life'+i),p.life);
   if(DUAL[game.tcg])setNum($('#chakra'+i),p.chakra||0);
   document.querySelectorAll(`.cell[data-p="${i}"] .inner`).forEach(inner=>{
-    if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
+    if(goalOf(game))inner.classList.toggle('win',p.life>=goalOf(game));
     else if(game.tcg!=='naruto')inner.classList.toggle('dead',p.life<=0);
     if(game.tcg==='magic')inner.classList.toggle('low',p.life>0&&p.life<=10);
   });
@@ -763,7 +829,8 @@ function changeLife(i,d,k='life'){
     if(R[1]!=null&&p[k]>R[1])p[k]=R[1];
     d=p[k]-before;if(d===0)return;
   }
-  if(game.tcg==='lorcana'&&before<LORE_GOAL&&p.life>=LORE_GOAL){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${LORE_GOAL} lore !`,3000)}
+  const G=goalOf(game);
+  if(G&&k==='life'&&before<G&&p.life>=G){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${G} ${game.tcg==='lorcana'?'lore':'points'} !`,3000)}
   updateLife(i);saveGame();vibrate(8);checkWinner(k);
   const D=deltas[i][k],el=$('#delta'+(k==='life'?'':k)+i);
   logChange(i,k,d,D.sum===0);
@@ -833,7 +900,8 @@ const MENUS={
   lorcana:['coin','first','d20','win','reset'],
   naruto:['mission','coin','first','d20','win','reset'],
   ygo:['calc','coin','d6','first','win','reset'],
-  sw:['coin','first','d20','win','reset']
+  sw:['coin','first','d20','win','reset'],
+  riftbound:['log','coin','first','d20','win','reset']
 };
 function renderMenu(){
   $('#menuGrid').innerHTML=MENUS[game.tcg].map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
@@ -932,7 +1000,7 @@ const allNamed=()=>game.players.every(p=>p.named);
 function checkWinner(k){
   if(!game||game.recorded||game.askedWin||!allNamed()||game.players.length<2)return;
   let w=-1;
-  if(game.tcg==='lorcana'){w=game.players.findIndex(p=>p.life>=LORE_GOAL)}
+  if(goalOf(game)){w=game.players.findIndex(p=>p.life>=goalOf(game))}
   else if(k==='life'&&game.tcg!=='naruto'){const alive=game.players.map((p,i)=>p.life>0?i:-1).filter(i=>i>=0);if(alive.length===1)w=alive[0]}
   if(w<0)return;
   game.askedWin=true;saveGame();
@@ -953,6 +1021,7 @@ function winModal(){
 }
 function scoreText(p){
   if(game.tcg==='lorcana')return p.life+' lore';
+  if(game.tcg==='riftbound')return p.life+' pts';
   if(game.tcg==='naruto')return p.life+' pts · '+(p.chakra||0)+' chakra · '+(p.missions||0)+' pts mission';
   if(game.tcg==='ygo')return p.life+' LP';
   return p.life+' PV';
@@ -1041,7 +1110,8 @@ function resetModal(){
     lorcana:'Le lore de chaque joueur revient à 0.',
     naruto:'Les points reviennent à leur valeur de départ, le chakra et les points de mission à 0.',
     ygo:'Les LP reviennent à leur valeur de départ.',
-    sw:'Les points de vie reviennent à leur valeur de départ.'}[game.tcg];
+    sw:'Les points de vie reviennent à leur valeur de départ.',
+    riftbound:'Les points de chaque joueur reviennent à 0 et le journal est effacé.'}[game.tcg];
   openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{

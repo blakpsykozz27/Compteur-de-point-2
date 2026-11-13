@@ -56,6 +56,13 @@ const lorcana=svg(`<polygon points="${poly(pts(6,76))}" fill="none" stroke="#fff
 <g stroke="#fff" stroke-width="1" fill="none">${pts(6,60).map(([x,y])=>`<path d="M100 100 L${x.toFixed(1)} ${y.toFixed(1)}"/>`).join('')}</g>
 <g fill="#fff">${drop(30,34,12)}${drop(172,160,14)}${drop(162,30,8)}${drop(36,168,9)}${spark(178,96,6)}${spark(20,100,5)}${spark(100,100,9)}</g>`,.15);
 
+/* Riftbound : hexagones emboîtés, faille en éclair et éclats */
+const riftbound=svg(`<polygon points="${poly(pts(6,84,100,100,-90))}" fill="none" stroke="#fff" stroke-width="3"/>
+<polygon points="${poly(pts(6,70,100,100,-90))}" fill="none" stroke="#fff" stroke-width="1.2"/>
+<polygon points="${poly(pts(6,40,100,100,-90))}" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="5 5"/>
+<path d="M108 30 L88 88 L110 96 L84 170 L124 92 L102 84 L120 30 Z" fill="#fff"/>
+<g fill="#fff"><path d="M24 24 L34 14 L38 30 Z"/><path d="M168 172 L180 160 L184 180 Z"/><path d="M170 26 L180 34 L168 40 Z"/><path d="M20 168 L30 176 L20 184 Z"/>${spark(160,100,6)}${spark(40,100,5)}</g>`,.14);
+
 const url=s=>`url("data:image/svg+xml,${encodeURIComponent(s)}")`;
-window.TCG_BG={magic:url(magic),fab:url(fab),sw:url(sw),naruto:url(naruto),ygo:url(ygo),lorcana:url(lorcana)};
+window.TCG_BG={magic:url(magic),fab:url(fab),sw:url(sw),naruto:url(naruto),ygo:url(ygo),lorcana:url(lorcana),riftbound:url(riftbound)};
 })();
