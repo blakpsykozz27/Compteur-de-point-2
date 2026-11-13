@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f13">
+<title>Compteur de Points TCG</title>
+<style>
+:root{--bg:#0e0f13;--panel:#181a21;--panel2:#20232c;--line:#2c2f3b;--text:#f3f3f6;--muted:#9a9cab;--gold:#e8b84a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.screen{position:fixed;inset:0;display:none;flex-direction:column}
+.screen.active{display:flex}
+.scroll{flex:1;overflow-y:auto;padding:22px 18px 110px;-webkit-overflow-scrolling:touch}
+.top{display:flex;align-items:center;gap:10px;padding:14px 14px 4px}
+.back{width:42px;height:42px;border-radius:12px;background:var(--panel);font-size:22px;display:grid;place-items:center}
+h1{font-size:28px;margin:6px 0 4px;letter-spacing:-.5px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin:26px 0 10px;font-weight:600}
+.sub{color:var(--muted);margin:0 0 18px}
+
+/* Accueil */
+.resume{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:16px;background:linear-gradient(120deg,#3a2a12,#6b4d1d);margin-bottom:16px;text-align:left}
+.resume b{display:block;font-size:16px}.resume small{color:#e9d8b4}
+.tcgs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tcg{position:relative;aspect-ratio:3/3.6;border-radius:18px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.tcg .sym{position:absolute;top:10px;right:12px;font-size:46px;opacity:.35}
+.tcg b{font-size:19px;line-height:1.1}
+.tcg small{color:rgba(255,255,255,.75);font-size:12px;margin-top:4px}
+.tcg .tag{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(0,0,0,.35)}
+.tcg.soon{filter:saturate(.45) brightness(.8)}
+.tcg:active{transform:scale(.97)}
+
+/* Configuration */
+.formats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fmt{padding:14px;border-radius:14px;background:var(--panel);border:2px solid transparent;text-align:left}
+.fmt b{display:block;font-size:16px}.fmt small{color:var(--muted);font-size:12px}
+.fmt.on{border-color:var(--gold);background:#272114}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-width:54px;padding:11px 14px;border-radius:12px;background:var(--panel);font-weight:700;font-size:16px;border:2px solid transparent}
+.chip.on{border-color:var(--gold);background:#272114;color:var(--gold)}
+.chip:disabled{opacity:.3}
+.custom{margin-top:10px;display:none;align-items:center;gap:10px}
+.custom.show{display:flex}
+.field{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:16px;outline:none}
+.field:focus{border-color:var(--gold)}
+.custom .field{width:110px}
+.prow{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.prow .role{font-size:11px;color:var(--gold);font-weight:700;white-space:nowrap}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:14px;background:var(--panel)}
+.sw{width:50px;height:30px;border-radius:20px;background:#3a3d49;position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--gold)}.sw.on::after{left:23px}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.cta{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));padding:17px;border-radius:16px;background:var(--gold);color:#1b1407;font-weight:800;font-size:18px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+/* Plateau */
+#board{position:absolute;inset:0;display:grid;gap:5px;padding:5px;padding-top:max(5px,env(safe-area-inset-top));padding-bottom:max(5px,env(safe-area-inset-bottom))}
+.cell{position:relative;container-type:size;overflow:hidden;border-radius:16px}
+.inner{position:absolute;left:50%;top:50%;width:100cqw;height:100cqh;transform:translate(-50%,-50%);border-radius:16px;background:linear-gradient(160deg,var(--c1),var(--c2));transition:filter .3s,box-shadow .15s}
+.inner.r90{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(90deg)}
+.inner.rn90{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(-90deg)}
+.inner.r180{transform:translate(-50%,-50%) rotate(180deg)}
+.zone{position:absolute;top:0;bottom:0;width:50%;display:flex;align-items:center;touch-action:none}
+.zone.minus{left:0;padding-left:7%;border-radius:16px 0 0 16px}
+.zone.plus{right:0;justify-content:flex-end;padding-right:7%;border-radius:0 16px 16px 0}
+.zone span{font-size:12cqmin;font-weight:300;opacity:.35;pointer-events:none}
+.zone.press{background:rgba(255,255,255,.08)}
+.info{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.pname{font-size:max(14px,6.5cqmin);font-weight:700;opacity:.9;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.life{font-size:36cqmin;font-weight:800;line-height:1;letter-spacing:-2px;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.35)}
+.delta{position:absolute;top:14%;font-size:max(14px,7cqmin);font-weight:800;opacity:0;transition:opacity .25s}
+.delta.show{opacity:1}
+.badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px;min-height:max(20px,6cqmin)}
+.badge{font-size:max(11px,4.2cqmin);font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,0,0,.35);white-space:nowrap}
+.badge.mon{background:var(--gold);color:#241a05}
+.badge.city{background:#e9e2cf;color:#2c2614}
+.badge.arch{background:#000;color:#ff6b6b}
+.callout{position:absolute;bottom:10%;font-size:max(14px,6cqmin);font-weight:800;color:var(--gold);opacity:0;transition:opacity .3s}
+.callout.show{opacity:1}
+.inner.dead{filter:grayscale(.85) brightness(.55)}
+.cell.hl .inner{box-shadow:inset 0 0 0 5px var(--gold),0 0 22px var(--gold)}
+#menuBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#0e0f13;border:3px solid var(--gold);color:var(--gold);font-size:24px;display:grid;place-items:center;z-index:5;box-shadow:0 4px 18px rgba(0,0,0,.6)}
+
+/* Feuille + fenêtres */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;z-index:20}
+.overlay.show{display:flex}
+.sheet{margin-top:auto;width:100%;background:var(--panel);border-radius:22px 22px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.grab{width:42px;height:5px;border-radius:3px;background:#444857;margin:2px auto 14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.act{padding:14px 6px;border-radius:14px;background:var(--panel2);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;font-weight:600;text-align:center;line-height:1.15}
+.act i{font-style:normal;font-size:26px}
+.act:active{background:#2b2f3b}
+.rowbtns{display:flex;gap:10px;margin-top:12px}
+.rowbtns .act{flex:1;flex-direction:row;justify-content:center;font-size:14px;padding:13px}
+.rowbtns .act i{font-size:18px}
+.modal-wrap{align-items:center;justify-content:center;padding:20px}
+.modal{width:min(100%,380px);background:var(--panel);border-radius:22px;padding:20px;animation:up .2s ease-out;max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 4px;font-size:20px}
+.modal p.m{margin:0 0 16px;color:var(--muted);font-size:14px}
+.plist{display:flex;flex-direction:column;gap:8px}
+.pbtn{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--panel2);font-size:16px;font-weight:600;text-align:left;border:2px solid transparent}
+.pbtn.on{border-color:var(--gold)}
+.pbtn .st{margin-left:auto;font-size:20px}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;background:var(--gold);color:#1b1407;font-weight:800;font-size:16px;margin-top:14px}
+.btn.ghost{background:var(--panel2);color:var(--text)}
+.die{width:170px;height:170px;margin:10px auto 6px;display:grid;place-items:center;font-size:72px;font-weight:900;color:#1b1407;background:linear-gradient(150deg,#f3d27e,#c8902b);clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);font-variant-numeric:tabular-nums}
+.die.rolling{animation:shake .12s linear infinite}
+@keyframes shake{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
+.die.crit{background:linear-gradient(150deg,#9effa8,#2fae4a)}
+.die.fumble{background:linear-gradient(150deg,#ff9c9c,#b52f2f);color:#fff}
+.dlabel{text-align:center;font-weight:800;min-height:22px;color:var(--gold)}
+.coin{width:160px;height:160px;margin:14px auto 10px;border-radius:50%;display:grid;place-items:center;font-size:28px;font-weight:900;letter-spacing:1px;color:#2a1d04;background:radial-gradient(circle at 35% 30%,#ffe9a8,#d9a53a 60%,#a8741c);box-shadow:inset 0 0 0 8px rgba(0,0,0,.12),0 8px 20px rgba(0,0,0,.4)}
+.coin.flip{animation:flip .9s ease-out}
+@keyframes flip{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(900deg) scale(1.25)}100%{transform:rotateY(1800deg) scale(1)}}
+#toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);background:#0e0f13;border:2px solid var(--gold);color:var(--text);padding:16px 22px;border-radius:18px;font-weight:800;font-size:19px;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:40;max-width:85vw}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+</head>
+<body>
+
+<!-- ACCUEIL -->
+<section class="screen active" id="home">
+  <div class="scroll">
+    <h1>Compteur de Points</h1>
+    <p class="sub">Choisis ton jeu de cartes</p>
+    <div id="resumeSlot"></div>
+    <div class="tcgs" id="tcgs"></div>
+  </div>
+</section>
+
+<!-- CONFIGURATION MAGIC -->
+<section class="screen" id="setup">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Magic — Nouvelle partie</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <h2>Format</h2>
+    <div class="formats" id="formats"></div>
+    <h2>Nombre de joueurs</h2>
+    <div class="chips" id="counts"></div>
+    <h2>Points de vie de départ</h2>
+    <div class="chips" id="lives"></div>
+    <div class="custom" id="customLife"><input class="field" id="customLifeIn" type="number" inputmode="numeric" min="1" max="999"><span class="note" style="margin:0">points de vie</span></div>
+    <div id="archBox" style="display:none">
+      <h2>Vie de l'Archenemy</h2>
+      <div class="chips" id="archLives"></div>
+    </div>
+    <h2>Joueurs</h2>
+    <div id="names"></div>
+    <h2>Début de partie</h2>
+    <button class="toggle" id="randToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="randSw"></span></button>
+  </div>
+  <button class="cta" id="startBtn">Lancer la partie</button>
+</section>
+
+<!-- PARTIE -->
+<section class="screen" id="game">
+  <div id="board"></div>
+  <button id="menuBtn" aria-label="Menu">☰</button>
+</section>
+
+<!-- Menu de partie -->
+<div class="overlay" id="sheetOv">
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="grid3">
+      <button class="act" data-a="monarch"><i>👑</i>Monarque</button>
+      <button class="act" data-a="city"><i>🏛️</i>Bénédiction de la cité</button>
+      <button class="act" data-a="d20"><i>🎲</i>Dé 20</button>
+      <button class="act" data-a="coin"><i>🪙</i>Pile ou face</button>
+      <button class="act" data-a="first"><i>🎯</i>Qui commence ?</button>
+      <button class="act" data-a="reset"><i>↺</i>Recommencer</button>
+    </div>
+    <div class="rowbtns">
+      <button class="act" data-a="edit"><i>✎</i>Modifier</button>
+      <button class="act" data-a="home"><i>⌂</i>Accueil</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay modal-wrap" id="modalOv"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- Données ---------- */
+const TCGS=[
+  {id:'magic',name:'Magic',sub:'The Gathering',sym:'✦',g:['#3a2a12','#b8862e'],ready:true},
+  {id:'fab',name:'Flesh and Blood',sym:'⚔',g:['#3b0d0d','#a3262a']},
+  {id:'sw',name:'Star Wars',sym:'✧',g:['#0b1530','#2d5bd1']},
+  {id:'naruto',name:'Naruto Mythos',sym:'◎',g:['#3a1a05','#e0701c']},
+  {id:'ygo',name:'Yu-Gi-Oh!',sym:'◈',g:['#1d0f33','#7b3fd0']},
+  {id:'lorcana',name:'Lorcana',sym:'❖',g:['#0c2430','#1c8fa8']}
+];
+const FORMATS={
+  standard:{label:'Standard',min:2,max:2,def:2,life:20,desc:'1 contre 1 · 2 joueurs'},
+  commander:{label:'Commander',min:2,max:5,def:4,life:40,desc:'Multijoueur · 2 à 5'},
+  duel:{label:'Duel Commander',min:2,max:2,def:2,life:20,desc:'1 contre 1 · 2 joueurs'},
+  archenemy:{label:'Archenemy',min:3,max:5,def:4,life:20,desc:'1 contre tous · 3 à 5'}
+};
+const LIVES=[20,25,30,40];
+const ARCH_LIVES=[30,40,50,60];
+const COLORS=[
+  ['#b8323a','#5a1218'],['#2f6fb5','#13304f'],['#2e9150','#123f22'],['#8a43b5','#3a1650'],['#c98a1e','#5a3a08']
+];
+const LAYOUTS={
+  2:{areas:'"b" "a"',cols:'1fr',rows:'1fr 1fr',cells:[['a',0],['b',180]]},
+  3:{areas:'"b c" "a a"',cols:'1fr 1fr',rows:'1.5fr 1fr',cells:[['a',0],['b',90],['c',-90]]},
+  4:{areas:'"b c" "a d"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',90],['b',90],['c',-90],['d',-90]]},
+  5:{areas:'"c c" "b d" "a e"',cols:'1fr 1fr',rows:'.85fr 1fr 1fr',cells:[['a',90],['b',90],['c',180],['d',-90],['e',-90]]}
+};
+
+/* ---------- Outils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function rnd(n){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}catch(e){return Math.floor(Math.random()*n)}}
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function store(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+let toastT;
+function toast(msg,ms=2200){const t=$('#toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms)}
+
+let wakeLock=null;
+async function keepAwake(on){try{if(on&&'wakeLock' in navigator&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null)}else if(!on&&wakeLock){await wakeLock.release();wakeLock=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&current==='game')keepAwake(true)});
+
+/* ---------- Navigation ---------- */
+let current='home';
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  current=id;
+  if(id==='home')renderHome();
+  if(id==='setup')renderSetup();
+  keepAwake(id==='game');
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+
+/* ---------- Accueil ---------- */
+function renderHome(){
+  $('#tcgs').innerHTML=TCGS.map(t=>`
+    <button class="tcg ${t.ready?'':'soon'}" data-t="${t.id}" style="background:linear-gradient(150deg,${t.g[0]},${t.g[1]})">
+      <span class="tag">${t.ready?'Disponible':'Bientôt'}</span>
+      <span class="sym">${t.sym}</span>
+      <b>${t.name}</b>${t.sub?`<small>${t.sub}</small>`:''}
+    </button>`).join('');
+  document.querySelectorAll('.tcg').forEach(b=>b.onclick=()=>{
+    const t=TCGS.find(x=>x.id===b.dataset.t);
+    if(t.ready)show('setup');else toast(`${t.name}<br><small style="color:var(--muted);font-weight:600">Bientôt disponible</small>`);
+  });
+  const g=load('cdp_game',null);
+  $('#resumeSlot').innerHTML=g?`<button class="resume" id="resumeBtn"><span style="font-size:28px">▶</span><span><b>Reprendre la partie</b><small>Magic · ${esc(FORMATS[g.format].label)} · ${g.players.map(p=>esc(p.name)).join(', ')}</small></span></button>`:'';
+  if(g)$('#resumeBtn').onclick=()=>{game=g;startBoard();};
+}
+
+/* ---------- Configuration ---------- */
+let setup=Object.assign({format:'commander',count:4,life:40,custom:false,archLife:40,names:['','','','',''],random:true},load('cdp_setup',{}));
+function saveSetup(){store('cdp_setup',setup)}
+function setFormat(f){
+  const F=FORMATS[f];setup.format=f;setup.count=Math.min(F.max,Math.max(F.min,F.def));
+  setup.life=F.life;setup.custom=false;saveSetup();renderSetup();
+}
+function renderSetup(){
+  const F=FORMATS[setup.format];
+  $('#formats').innerHTML=Object.entries(FORMATS).map(([k,v])=>`<button class="fmt ${k===setup.format?'on':''}" data-f="${k}"><b>${v.label}</b><small>${v.desc}</small></button>`).join('');
+  document.querySelectorAll('.fmt').forEach(b=>b.onclick=()=>setFormat(b.dataset.f));
+
+  let c='';for(let n=2;n<=5;n++)c+=`<button class="chip ${n===setup.count?'on':''}" data-n="${n}" ${n<F.min||n>F.max?'disabled':''}>${n}</button>`;
+  $('#counts').innerHTML=c;
+  document.querySelectorAll('#counts .chip').forEach(b=>b.onclick=()=>{setup.count=+b.dataset.n;saveSetup();renderSetup()});
+
+  $('#lives').innerHTML=LIVES.map(l=>`<button class="chip ${!setup.custom&&l===setup.life?'on':''}" data-l="${l}">${l}</button>`).join('')+`<button class="chip ${setup.custom?'on':''}" data-l="x">Autre</button>`;
+  document.querySelectorAll('#lives .chip').forEach(b=>b.onclick=()=>{
+    if(b.dataset.l==='x'){setup.custom=true}else{setup.custom=false;setup.life=+b.dataset.l}
+    saveSetup();renderSetup();if(setup.custom)$('#customLifeIn').focus();
+  });
+  $('#customLife').classList.toggle('show',setup.custom);
+  $('#customLifeIn').value=setup.life;
+
+  const isArch=setup.format==='archenemy';
+  $('#archBox').style.display=isArch?'block':'none';
+  $('#archLives').innerHTML=ARCH_LIVES.map(l=>`<button class="chip ${l===setup.archLife?'on':''}" data-l="${l}">${l}</button>`).join('');
+  document.querySelectorAll('#archLives .chip').forEach(b=>b.onclick=()=>{setup.archLife=+b.dataset.l;saveSetup();renderSetup()});
+
+  let h='';
+  for(let i=0;i<setup.count;i++){
+    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(setup.names[i]||'')}">${isArch&&i===0?'<span class="role">ARCHENEMY</span>':''}</div>`;
+  }
+  $('#names').innerHTML=h;
+  document.querySelectorAll('#names input').forEach(inp=>inp.oninput=()=>{setup.names[+inp.dataset.i]=inp.value;saveSetup()});
+  $('#randSw').classList.toggle('on',setup.random);
+}
+$('#customLifeIn').oninput=e=>{const v=parseInt(e.target.value,10);if(v>0&&v<1000){setup.life=v;saveSetup()}};
+$('#randToggle').onclick=()=>{setup.random=!setup.random;saveSetup();$('#randSw').classList.toggle('on',setup.random)};
+$('#startBtn').onclick=()=>{
+  const isArch=setup.format==='archenemy';
+  game={format:setup.format,start:setup.life,archLife:setup.archLife,monarch:null,
+    players:Array.from({length:setup.count},(_,i)=>{
+      const life=isArch&&i===0?setup.archLife:setup.life;
+      return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,city:false};
+    })};
+  saveGame();startBoard();
+  if(setup.random)setTimeout(pickFirst,450);
+};
+
+/* ---------- Partie ---------- */
+let game=null;
+const deltas=[];
+function saveGame(){store('cdp_game',game)}
+function startBoard(){show('game');renderBoard()}
+
+function renderBoard(){
+  const n=game.players.length,L=LAYOUTS[n],b=$('#board');
+  b.style.gridTemplateAreas=L.areas;b.style.gridTemplateColumns=L.cols;b.style.gridTemplateRows=L.rows;
+  const rc={0:'',90:'r90','-90':'rn90',180:'r180'};
+  b.innerHTML=game.players.map((p,i)=>{
+    const [area,rot]=L.cells[i];
+    return `<div class="cell" id="cell${i}" style="grid-area:${area}">
+      <div class="inner ${rc[rot]}" style="--c1:${COLORS[i][0]};--c2:${COLORS[i][1]}">
+        <div class="zone minus" data-i="${i}" data-d="-1"><span>−</span></div>
+        <div class="zone plus" data-i="${i}" data-d="1"><span>+</span></div>
+        <div class="info">
+          <div class="pname">${esc(p.name)}</div>
+          <div class="life" id="life${i}"></div>
+          <div class="delta" id="delta${i}"></div>
+          <div class="badges" id="badges${i}"></div>
+          <div class="callout" id="call${i}"></div>
+        </div>
+      </div></div>`;
+  }).join('');
+  b.querySelectorAll('.zone').forEach(bindZone);
+  for(let i=0;i<n;i++){updateLife(i);deltas[i]={sum:0,t:null}}
+  updateBadges();
+}
+function updateLife(i){
+  const p=game.players[i];$('#life'+i).textContent=p.life;
+  $('#cell'+i).querySelector('.inner').classList.toggle('dead',p.life<=0);
+}
+function changeLife(i,d){
+  game.players[i].life+=d;updateLife(i);saveGame();vibrate(8);
+  const D=deltas[i],el=$('#delta'+i);D.sum+=d;
+  el.textContent=(D.sum>0?'+':'')+D.sum;el.style.color=D.sum>=0?'#b9ffc4':'#ffc2c2';
+  el.classList.toggle('show',D.sum!==0);clearTimeout(D.t);
+  D.t=setTimeout(()=>{el.classList.remove('show');D.sum=0},1800);
+}
+function bindZone(z){
+  const i=+z.dataset.i,d=+z.dataset.d;let hold=null,rep=null,held=false;
+  const stop=()=>{clearTimeout(hold);clearInterval(rep);z.classList.remove('press')};
+  z.addEventListener('pointerdown',e=>{
+    e.preventDefault();held=false;z.classList.add('press');
+    hold=setTimeout(()=>{held=true;changeLife(i,d*10);rep=setInterval(()=>changeLife(i,d*10),550)},450);
+  });
+  z.addEventListener('pointerup',()=>{if(!held&&z.classList.contains('press'))changeLife(i,d);stop()});
+  z.addEventListener('pointercancel',stop);z.addEventListener('pointerleave',stop);
+  z.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function updateBadges(){
+  game.players.forEach((p,i)=>{
+    let h='';
+    if(game.format==='archenemy'&&i===0)h+='<span class="badge arch">Archenemy</span>';
+    if(game.monarch===i)h+='<span class="badge mon">👑 Monarque</span>';
+    if(p.city)h+='<span class="badge city">🏛️ Bénédiction</span>';
+    $('#badges'+i).innerHTML=h;
+  });
+}
+function callout(i,txt,ms=2600){const c=$('#call'+i);c.textContent=txt;c.classList.add('show');setTimeout(()=>c.classList.remove('show'),ms)}
+
+/* Tirage au sort du premier joueur */
+let picking=false;
+function pickFirst(){
+  if(picking||!game)return;picking=true;
+  const n=game.players.length,win=rnd(n),total=n*3+win;let step=0;
+  const cells=[...document.querySelectorAll('.cell')];
+  const tick=()=>{
+    cells.forEach(c=>c.classList.remove('hl'));cells[step%n].classList.add('hl');vibrate(5);
+    if(step>=total){
+      vibrate(60);callout(win,'Tu commences !');
+      toast(`🎯 ${esc(game.players[win].name)} commence !`,2400);
+      setTimeout(()=>{cells[win].classList.remove('hl');picking=false},2600);return;
+    }
+    step++;setTimeout(tick,70+Math.pow(step/total,3)*330);
+  };
+  tick();
+}
+
+/* ---------- Menu de partie ---------- */
+const sheetOv=$('#sheetOv'),modalOv=$('#modalOv');
+$('#menuBtn').onclick=()=>sheetOv.classList.add('show');
+sheetOv.onclick=e=>{if(e.target===sheetOv)sheetOv.classList.remove('show')};
+modalOv.onclick=e=>{if(e.target===modalOv)closeModal()};
+function closeModal(){modalOv.classList.remove('show');clearInterval(rollT)}
+function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show')}
+
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+  sheetOv.classList.remove('show');
+  ({monarch:monarchModal,city:cityModal,d20:d20Modal,coin:coinModal,
+    first:()=>setTimeout(pickFirst,150),reset:resetModal,
+    edit:()=>show('setup'),home:()=>show('home')})[b.dataset.a]();
+});
+
+function playerButtons(isOn,mark){
+  return game.players.map((p,i)=>`<button class="pbtn ${isOn(i)?'on':''}" data-i="${i}"><span class="dot" style="background:${COLORS[i][0]}"></span>${esc(p.name)}<span class="st">${isOn(i)?mark:''}</span></button>`).join('');
+}
+function monarchModal(){
+  openModal(`<h3>👑 Monarque</h3><p class="m">Qui est le monarque ? Il pioche une carte supplémentaire à sa fin de tour.</p>
+    <div class="plist">${playerButtons(i=>game.monarch===i,'👑')}</div>
+    <button class="btn ghost" id="noMon">Personne n'est monarque</button>`);
+  document.querySelectorAll('#modal .pbtn').forEach(b=>b.onclick=()=>{
+    game.monarch=+b.dataset.i;saveGame();updateBadges();closeModal();
+    callout(game.monarch,'👑 Monarque');
+  });
+  $('#noMon').onclick=()=>{game.monarch=null;saveGame();updateBadges();closeModal()};
+}
+function cityModal(){
+  const draw=()=>{
+    openModal(`<h3>🏛️ Bénédiction de la cité</h3><p class="m">Une fois obtenue, elle est permanente. Touche un joueur pour l'activer ou la retirer.</p>
+      <div class="plist">${playerButtons(i=>game.players[i].city,'✓')}</div>
+      <button class="btn" id="cityOk">Terminé</button>`);
+    document.querySelectorAll('#modal .pbtn').forEach(b=>b.onclick=()=>{
+      const p=game.players[+b.dataset.i];p.city=!p.city;saveGame();updateBadges();draw();
+    });
+    $('#cityOk').onclick=closeModal;
+  };
+  draw();
+}
+let rollT=null;
+function d20Modal(){
+  openModal(`<h3>🎲 Dé 20</h3><div class="die" id="die">20</div><div class="dlabel" id="dlabel"></div>
+    <button class="btn" id="reroll">Relancer</button><button class="btn ghost" id="dClose">Fermer</button>`);
+  const roll=()=>{
+    const die=$('#die'),lab=$('#dlabel');clearInterval(rollT);
+    die.className='die rolling';lab.textContent='';let k=0;
+    rollT=setInterval(()=>{
+      die.textContent=1+rnd(20);
+      if(++k>14){clearInterval(rollT);const v=1+rnd(20);die.textContent=v;
+        die.className='die'+(v===20?' crit':v===1?' fumble':'');
+        lab.textContent=v===20?'Coup critique !':v===1?'Échec critique…':'';vibrate(40)}
+    },55);
+  };
+  $('#reroll').onclick=roll;$('#dClose').onclick=closeModal;roll();
+}
+function coinModal(){
+  openModal(`<h3>🪙 Pile ou face</h3><div class="coin" id="coin">?</div>
+    <button class="btn" id="reflip">Relancer</button><button class="btn ghost" id="cClose">Fermer</button>`);
+  const flip=()=>{
+    const c=$('#coin');c.classList.remove('flip');void c.offsetWidth;c.textContent='';c.classList.add('flip');
+    const r=rnd(2)?'PILE':'FACE';setTimeout(()=>{c.textContent=r;vibrate(40)},850);
+  };
+  $('#reflip').onclick=flip;$('#cClose').onclick=closeModal;flip();
+}
+function resetModal(){
+  openModal(`<h3>Recommencer ?</h3><p class="m">Les points de vie reviennent à leur valeur de départ. Monarque et bénédiction sont retirés.</p>
+    <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
+  $('#rOk').onclick=()=>{
+    game.players.forEach(p=>{p.life=p.start;p.city=false});game.monarch=null;saveGame();closeModal();renderBoard();
+    if(setup.random)setTimeout(pickFirst,350);
+  };
+  $('#rNo').onclick=closeModal;
+}
+
+/* Bouton retour Android */
+window.handleBack=function(){
+  if(modalOv.classList.contains('show')){closeModal();return true}
+  if(sheetOv.classList.contains('show')){sheetOv.classList.remove('show');return true}
+  if(current==='game'){sheetOv.classList.add('show');return true}
+  if(current==='setup'){show('home');return true}
+  return false;
+};
+
+renderHome();
+</script>
+</body>
+</html>
