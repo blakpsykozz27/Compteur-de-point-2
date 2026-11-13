@@ -1,0 +1,39 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.compteurdepoint.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.compteurdepoint.app"
+        minSdk 24
+        targetSdk 35
+        // Incrémente versionCode à chaque nouvelle version publiée
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        // Clé fixe : indispensable pour que chaque mise à jour s'installe par-dessus l'ancienne
+        compteur {
+            storeFile file('compteur.keystore')
+            storePassword 'compteur123'
+            keyAlias 'compteur'
+            keyPassword 'compteur123'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.compteur
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
