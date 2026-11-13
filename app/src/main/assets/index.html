@@ -118,6 +118,16 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 @keyframes flip{0%{transform:rotateY(0) scale(1)}50%{transform:rotateY(900deg) scale(1.25)}100%{transform:rotateY(1800deg) scale(1)}}
 #toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);background:#0e0f13;border:2px solid var(--gold);color:var(--text);padding:16px 22px;border-radius:18px;font-weight:800;font-size:19px;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:40;max-width:85vw}
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.lifein{width:78px;text-align:center;flex:none}
+.unit{font-size:max(11px,4.5cqmin);font-weight:700;opacity:.75;margin-top:2px}
+.inner.win{box-shadow:inset 0 0 0 5px var(--gold),0 0 22px var(--gold)}
+.badge.might{background:#e35b3b;color:#fff}
+.badge.agi{background:#3bb3e3;color:#062433}
+.tokrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--panel2);margin-top:6px}
+.tokrow span.l{flex:1;font-weight:600}
+.tokrow b{min-width:28px;text-align:center;font-size:20px}
+.tb{width:42px;height:42px;border-radius:10px;background:#2b2f3b;font-size:22px;font-weight:800}
+.tokname{display:flex;align-items:center;gap:8px;font-weight:800;margin:14px 0 2px}
 </style>
 </head>
 <body>
@@ -155,6 +165,36 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
   <button class="cta" id="startBtn">Lancer la partie</button>
 </section>
 
+<!-- CONFIGURATION FLESH AND BLOOD -->
+<section class="screen" id="setupFab">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Flesh and Blood — Nouvelle partie</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <h2>Format</h2>
+    <div class="formats" id="fabFormats"></div>
+    <h2>Joueurs et points de vie</h2>
+    <div id="fabNames"></div>
+    <p class="note">La vie dépend de ton héros : modifie-la si elle est différente de la valeur du format.</p>
+    <h2>Début de partie</h2>
+    <button class="toggle" id="fabRandToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="fabRandSw"></span></button>
+  </div>
+  <button class="cta" id="fabStartBtn">Lancer la partie</button>
+</section>
+
+<!-- CONFIGURATION LORCANA -->
+<section class="screen" id="setupLor">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Lorcana — Nouvelle partie</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <h2>Nombre de joueurs</h2>
+    <div class="chips" id="lorCounts"></div>
+    <h2>Joueurs</h2>
+    <div id="lorNames"></div>
+    <p class="note">Chaque joueur part de 0 lore. Le premier à 20 lore gagne.</p>
+    <h2>Début de partie</h2>
+    <button class="toggle" id="lorRandToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="lorRandSw"></span></button>
+  </div>
+  <button class="cta" id="lorStartBtn">Lancer la partie</button>
+</section>
+
 <!-- PARTIE -->
 <section class="screen" id="game">
   <div id="board"></div>
@@ -165,14 +205,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 <div class="overlay" id="sheetOv">
   <div class="sheet">
     <div class="grab"></div>
-    <div class="grid3">
-      <button class="act" data-a="monarch"><i>👑</i>Monarque</button>
-      <button class="act" data-a="city"><i>🏛️</i>Bénédiction de la cité</button>
-      <button class="act" data-a="d20"><i>🎲</i>Dé 20</button>
-      <button class="act" data-a="coin"><i>🪙</i>Pile ou face</button>
-      <button class="act" data-a="first"><i>🎯</i>Qui commence ?</button>
-      <button class="act" data-a="reset"><i>↺</i>Recommencer</button>
-    </div>
+    <div class="grid3" id="menuGrid"></div>
     <div class="rowbtns">
       <button class="act" data-a="edit"><i>✎</i>Modifier</button>
       <button class="act" data-a="home"><i>⌂</i>Accueil</button>
@@ -188,11 +221,11 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 /* ---------- Données ---------- */
 const TCGS=[
   {id:'magic',name:'Magic',sub:'The Gathering',sym:'✦',g:['#3a2a12','#b8862e'],ready:true},
-  {id:'fab',name:'Flesh and Blood',sym:'⚔',g:['#3b0d0d','#a3262a']},
+  {id:'fab',name:'Flesh and Blood',sym:'⚔',g:['#3b0d0d','#a3262a'],ready:true},
   {id:'sw',name:'Star Wars',sym:'✧',g:['#0b1530','#2d5bd1']},
   {id:'naruto',name:'Naruto Mythos',sym:'◎',g:['#3a1a05','#e0701c']},
   {id:'ygo',name:'Yu-Gi-Oh!',sym:'◈',g:['#1d0f33','#7b3fd0']},
-  {id:'lorcana',name:'Lorcana',sym:'❖',g:['#0c2430','#1c8fa8']}
+  {id:'lorcana',name:'Lorcana',sym:'❖',g:['#0c2430','#1c8fa8'],ready:true}
 ];
 const FORMATS={
   standard:{label:'Standard',min:2,max:2,def:2,life:20,desc:'1 contre 1 · 2 joueurs'},
@@ -201,6 +234,13 @@ const FORMATS={
   archenemy:{label:'Archenemy',min:3,max:5,def:4,life:20,desc:'1 contre tous · 3 à 5'}
 };
 const LIVES=[20,25,30,40];
+const FAB_FORMATS={
+  blitz:{label:'Blitz',life:20,desc:'Héros jeune · 20 PV'},
+  cc:{label:'Classic Constructed',life:40,desc:'Héros adulte · 40 PV'},
+  silver:{label:'Silver Age',life:20,desc:'20 PV'}
+};
+const LORE_GOAL=20;
+const SETUP_SCREEN={magic:'setup',fab:'setupFab',lorcana:'setupLor'};
 const ARCH_LIVES=[30,40,50,60];
 const COLORS=[
   ['#b8323a','#5a1218'],['#2f6fb5','#13304f'],['#2e9150','#123f22'],['#8a43b5','#3a1650'],['#c98a1e','#5a3a08']
@@ -233,6 +273,8 @@ function show(id){
   current=id;
   if(id==='home')renderHome();
   if(id==='setup')renderSetup();
+  if(id==='setupFab')renderFabSetup();
+  if(id==='setupLor')renderLorSetup();
   keepAwake(id==='game');
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
@@ -247,10 +289,11 @@ function renderHome(){
     </button>`).join('');
   document.querySelectorAll('.tcg').forEach(b=>b.onclick=()=>{
     const t=TCGS.find(x=>x.id===b.dataset.t);
-    if(t.ready)show('setup');else toast(`${t.name}<br><small style="color:var(--muted);font-weight:600">Bientôt disponible</small>`);
+    if(t.ready)show(SETUP_SCREEN[t.id]);else toast(`${t.name}<br><small style="color:var(--muted);font-weight:600">Bientôt disponible</small>`);
   });
   const g=load('cdp_game',null);
-  $('#resumeSlot').innerHTML=g?`<button class="resume" id="resumeBtn"><span style="font-size:28px">▶</span><span><b>Reprendre la partie</b><small>Magic · ${esc(FORMATS[g.format].label)} · ${g.players.map(p=>esc(p.name)).join(', ')}</small></span></button>`:'';
+  if(g&&!g.tcg)g.tcg='magic';
+  $('#resumeSlot').innerHTML=g?`<button class="resume" id="resumeBtn"><span style="font-size:28px">▶</span><span><b>Reprendre la partie</b><small>${esc(gameLabel(g))} · ${g.players.map(p=>esc(p.name)).join(', ')}</small></span></button>`:'';
   if(g)$('#resumeBtn').onclick=()=>{game=g;startBoard();};
 }
 
@@ -295,7 +338,7 @@ $('#customLifeIn').oninput=e=>{const v=parseInt(e.target.value,10);if(v>0&&v<100
 $('#randToggle').onclick=()=>{setup.random=!setup.random;saveSetup();$('#randSw').classList.toggle('on',setup.random)};
 $('#startBtn').onclick=()=>{
   const isArch=setup.format==='archenemy';
-  game={format:setup.format,start:setup.life,archLife:setup.archLife,monarch:null,
+  game={tcg:'magic',format:setup.format,start:setup.life,archLife:setup.archLife,monarch:null,
     players:Array.from({length:setup.count},(_,i)=>{
       const life=isArch&&i===0?setup.archLife:setup.life;
       return {name:(setup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,city:false};
@@ -304,11 +347,67 @@ $('#startBtn').onclick=()=>{
   if(setup.random)setTimeout(pickFirst,450);
 };
 
+/* ---------- Configuration Flesh and Blood ---------- */
+let fabSetup=Object.assign({format:'blitz',names:['',''],lives:[20,20],random:true},load('cdp_fab_setup',{}));
+function saveFabSetup(){store('cdp_fab_setup',fabSetup)}
+function renderFabSetup(){
+  $('#fabFormats').innerHTML=Object.entries(FAB_FORMATS).map(([k,v])=>`<button class="fmt ${k===fabSetup.format?'on':''}" data-f="${k}"><b>${v.label}</b><small>${v.desc}</small></button>`).join('');
+  document.querySelectorAll('#fabFormats .fmt').forEach(b=>b.onclick=()=>{
+    fabSetup.format=b.dataset.f;const l=FAB_FORMATS[fabSetup.format].life;fabSetup.lives=[l,l];saveFabSetup();renderFabSetup();
+  });
+  let h='';
+  for(let i=0;i<2;i++){
+    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(fabSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${fabSetup.lives[i]}"></div>`;
+  }
+  $('#fabNames').innerHTML=h;
+  document.querySelectorAll('#fabNames input[data-i]').forEach(inp=>inp.oninput=()=>{fabSetup.names[+inp.dataset.i]=inp.value;saveFabSetup()});
+  document.querySelectorAll('#fabNames input[data-life]').forEach(inp=>inp.oninput=()=>{const v=parseInt(inp.value,10);if(v>0&&v<1000){fabSetup.lives[+inp.dataset.life]=v;saveFabSetup()}});
+  $('#fabRandSw').classList.toggle('on',fabSetup.random);
+}
+$('#fabRandToggle').onclick=()=>{fabSetup.random=!fabSetup.random;saveFabSetup();$('#fabRandSw').classList.toggle('on',fabSetup.random)};
+$('#fabStartBtn').onclick=()=>{
+  game={tcg:'fab',format:fabSetup.format,
+    players:[0,1].map(i=>{const life=fabSetup.lives[i]||FAB_FORMATS[fabSetup.format].life;
+      return {name:(fabSetup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,might:0,agility:0}})};
+  saveGame();startBoard();
+  if(fabSetup.random)setTimeout(pickFirst,450);
+};
+
+/* ---------- Configuration Lorcana ---------- */
+let lorSetup=Object.assign({count:2,names:['','','',''],random:true},load('cdp_lor_setup',{}));
+function saveLorSetup(){store('cdp_lor_setup',lorSetup)}
+function renderLorSetup(){
+  let c='';for(let n=2;n<=4;n++)c+=`<button class="chip ${n===lorSetup.count?'on':''}" data-n="${n}">${n}</button>`;
+  $('#lorCounts').innerHTML=c;
+  document.querySelectorAll('#lorCounts .chip').forEach(b=>b.onclick=()=>{lorSetup.count=+b.dataset.n;saveLorSetup();renderLorSetup()});
+  let h='';
+  for(let i=0;i<lorSetup.count;i++){
+    h+=`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(lorSetup.names[i]||'')}"></div>`;
+  }
+  $('#lorNames').innerHTML=h;
+  document.querySelectorAll('#lorNames input').forEach(inp=>inp.oninput=()=>{lorSetup.names[+inp.dataset.i]=inp.value;saveLorSetup()});
+  $('#lorRandSw').classList.toggle('on',lorSetup.random);
+}
+$('#lorRandToggle').onclick=()=>{lorSetup.random=!lorSetup.random;saveLorSetup();$('#lorRandSw').classList.toggle('on',lorSetup.random)};
+$('#lorStartBtn').onclick=()=>{
+  game={tcg:'lorcana',
+    players:Array.from({length:lorSetup.count},(_,i)=>({name:(lorSetup.names[i]||'').trim()||`Joueur ${i+1}`,life:0,start:0}))};
+  saveGame();startBoard();
+  if(lorSetup.random)setTimeout(pickFirst,450);
+};
+
+function gameLabel(g){
+  if(g.tcg==='fab')return 'Flesh and Blood · '+FAB_FORMATS[g.format].label;
+  if(g.tcg==='lorcana')return 'Lorcana';
+  return 'Magic · '+FORMATS[g.format].label;
+}
+function randomFirstOn(){return game.tcg==='fab'?fabSetup.random:game.tcg==='lorcana'?lorSetup.random:setup.random}
+
 /* ---------- Partie ---------- */
 let game=null;
 const deltas=[];
 function saveGame(){store('cdp_game',game)}
-function startBoard(){show('game');renderBoard()}
+function startBoard(){if(!game.tcg)game.tcg='magic';show('game');renderBoard();renderMenu()}
 
 function renderBoard(){
   const n=game.players.length,L=LAYOUTS[n],b=$('#board');
@@ -323,6 +422,7 @@ function renderBoard(){
         <div class="info">
           <div class="pname">${esc(p.name)}</div>
           <div class="life" id="life${i}"></div>
+          ${game.tcg==='lorcana'?`<div class="unit">◆ lore · objectif ${LORE_GOAL}</div>`:''}
           <div class="delta" id="delta${i}"></div>
           <div class="badges" id="badges${i}"></div>
           <div class="callout" id="call${i}"></div>
@@ -335,10 +435,19 @@ function renderBoard(){
 }
 function updateLife(i){
   const p=game.players[i];$('#life'+i).textContent=p.life;
-  $('#cell'+i).querySelector('.inner').classList.toggle('dead',p.life<=0);
+  const inner=$('#cell'+i).querySelector('.inner');
+  if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
+  else inner.classList.toggle('dead',p.life<=0);
 }
 function changeLife(i,d){
-  game.players[i].life+=d;updateLife(i);saveGame();vibrate(8);
+  const p=game.players[i],before=p.life;
+  p.life+=d;
+  if(game.tcg==='lorcana'){
+    if(p.life<0)p.life=0;
+    d=p.life-before;if(d===0)return;
+    if(before<LORE_GOAL&&p.life>=LORE_GOAL){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${LORE_GOAL} lore !`,3000)}
+  }
+  updateLife(i);saveGame();vibrate(8);
   const D=deltas[i],el=$('#delta'+i);D.sum+=d;
   el.textContent=(D.sum>0?'+':'')+D.sum;el.style.color=D.sum>=0?'#b9ffc4':'#ffc2c2';
   el.classList.toggle('show',D.sum!==0);clearTimeout(D.t);
@@ -361,6 +470,8 @@ function updateBadges(){
     if(game.format==='archenemy'&&i===0)h+='<span class="badge arch">Archenemy</span>';
     if(game.monarch===i)h+='<span class="badge mon">👑 Monarque</span>';
     if(p.city)h+='<span class="badge city">🏛️ Bénédiction</span>';
+    if(p.might>0)h+=`<span class="badge might">💪 Puissance ×${p.might}</span>`;
+    if(p.agility>0)h+=`<span class="badge agi">🏃 Agilité ×${p.agility}</span>`;
     $('#badges'+i).innerHTML=h;
   });
 }
@@ -392,12 +503,44 @@ modalOv.onclick=e=>{if(e.target===modalOv)closeModal()};
 function closeModal(){modalOv.classList.remove('show');clearInterval(rollT)}
 function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show')}
 
-document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
-  sheetOv.classList.remove('show');
-  ({monarch:monarchModal,city:cityModal,d20:d20Modal,coin:coinModal,
-    first:()=>setTimeout(pickFirst,150),reset:resetModal,
-    edit:()=>show('setup'),home:()=>show('home')})[b.dataset.a]();
-});
+const ACTIONS={
+  monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],
+  d20:['🎲','Dé 20'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
+};
+const MENUS={
+  magic:['monarch','city','d20','coin','first','reset'],
+  fab:['tokens','coin','first','d20','reset'],
+  lorcana:['coin','first','d20','reset']
+};
+function renderMenu(){
+  $('#menuGrid').innerHTML=MENUS[game.tcg].map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
+  bindActions();
+}
+function bindActions(){
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+    sheetOv.classList.remove('show');
+    ({monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:d20Modal,coin:coinModal,
+      first:()=>setTimeout(pickFirst,150),reset:resetModal,
+      edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
+  });
+}
+bindActions();
+
+function tokensModal(){
+  const draw=()=>{
+    openModal(`<h3>💪 Jetons</h3><p class="m">Puissance et Agilité de chaque joueur.</p>
+      ${game.players.map((p,i)=>`<div class="tokname"><span class="dot" style="background:${COLORS[i][0]}"></span>${esc(p.name)}</div>
+        <div class="tokrow"><span class="l">💪 Puissance</span><button class="tb" data-i="${i}" data-k="might" data-d="-1">−</button><b>${p.might||0}</b><button class="tb" data-i="${i}" data-k="might" data-d="1">+</button></div>
+        <div class="tokrow"><span class="l">🏃 Agilité</span><button class="tb" data-i="${i}" data-k="agility" data-d="-1">−</button><b>${p.agility||0}</b><button class="tb" data-i="${i}" data-k="agility" data-d="1">+</button></div>`).join('')}
+      <button class="btn" id="tokOk">Terminé</button>`);
+    document.querySelectorAll('#modal .tb').forEach(b=>b.onclick=()=>{
+      const p=game.players[+b.dataset.i],k=b.dataset.k;p[k]=Math.max(0,(p[k]||0)+(+b.dataset.d));
+      saveGame();updateBadges();vibrate(6);draw();
+    });
+    $('#tokOk').onclick=closeModal;
+  };
+  draw();
+}
 
 function playerButtons(isOn,mark){
   return game.players.map((p,i)=>`<button class="pbtn ${isOn(i)?'on':''}" data-i="${i}"><span class="dot" style="background:${COLORS[i][0]}"></span>${esc(p.name)}<span class="st">${isOn(i)?mark:''}</span></button>`).join('');
@@ -450,11 +593,14 @@ function coinModal(){
   $('#reflip').onclick=flip;$('#cClose').onclick=closeModal;flip();
 }
 function resetModal(){
-  openModal(`<h3>Recommencer ?</h3><p class="m">Les points de vie reviennent à leur valeur de départ. Monarque et bénédiction sont retirés.</p>
+  const msg={magic:'Les points de vie reviennent à leur valeur de départ. Monarque et bénédiction sont retirés.',
+    fab:'Les points de vie reviennent à leur valeur de départ. Les jetons Puissance et Agilité sont retirés.',
+    lorcana:'Le lore de chaque joueur revient à 0.'}[game.tcg];
+  openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{
-    game.players.forEach(p=>{p.life=p.start;p.city=false});game.monarch=null;saveGame();closeModal();renderBoard();
-    if(setup.random)setTimeout(pickFirst,350);
+    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}});game.monarch=null;saveGame();closeModal();renderBoard();
+    if(randomFirstOn())setTimeout(pickFirst,350);
   };
   $('#rNo').onclick=closeModal;
 }
@@ -464,7 +610,7 @@ window.handleBack=function(){
   if(modalOv.classList.contains('show')){closeModal();return true}
   if(sheetOv.classList.contains('show')){sheetOv.classList.remove('show');return true}
   if(current==='game'){sheetOv.classList.add('show');return true}
-  if(current==='setup'){show('home');return true}
+  if(current==='setup'||current==='setupFab'||current==='setupLor'){show('home');return true}
   return false;
 };
 
