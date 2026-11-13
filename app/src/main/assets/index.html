@@ -158,6 +158,12 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .hitem .hp{font-size:13px;color:var(--muted);margin-top:2px}
 .empty{color:var(--muted);text-align:center;padding:30px 10px}
 .btn.danger{background:#2a1416;color:#ff8a8a}
+.log{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}
+.lrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--panel2);font-size:15px}
+.lrow .ln{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .ld{font-weight:900;min-width:44px;text-align:right}
+.lrow .lv{color:var(--muted);min-width:52px;text-align:right}
+.lrow .lt{color:var(--muted);font-size:12px;min-width:58px;text-align:right}
 @media (orientation:landscape){
   .scroll{padding:16px 24px 100px}
   .tcgs{grid-template-columns:repeat(3,1fr)}
@@ -692,7 +698,9 @@ function changeLife(i,d,k='life'){
   }
   if(game.tcg==='lorcana'&&before<LORE_GOAL&&p.life>=LORE_GOAL){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${LORE_GOAL} lore !`,3000)}
   updateLife(i);saveGame();vibrate(8);checkWinner(k);
-  const D=deltas[i][k],el=$('#delta'+(k==='life'?'':k)+i);D.sum+=d;
+  const D=deltas[i][k],el=$('#delta'+(k==='life'?'':k)+i);
+  logChange(i,k,d,D.sum===0);
+  D.sum+=d;
   el.textContent=(D.sum>0?'+':'')+D.sum;el.style.color=D.sum>=0?'#b9ffc4':'#ffc2c2';
   el.classList.toggle('show',D.sum!==0);clearTimeout(D.t);
   D.t=setTimeout(()=>{el.classList.remove('show');D.sum=0},1800);
@@ -749,10 +757,10 @@ function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show'
 
 const ACTIONS={
   monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],
-  win:['🏆','Victoire'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
+  win:['🏆','Victoire'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
 };
 const MENUS={
-  magic:['monarch','city','d20','coin','first','win','reset'],
+  magic:['monarch','city','log','d20','coin','first','win','reset'],
   fab:['tokens','coin','first','d20','win','reset'],
   lorcana:['coin','first','d20','win','reset'],
   naruto:['coin','first','d20','win','reset'],
@@ -766,7 +774,7 @@ function renderMenu(){
 function bindActions(){
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     sheetOv.classList.remove('show');
-    ({win:winModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
+    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
       first:()=>setTimeout(pickFirst,150),reset:resetModal,
       edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
   });
@@ -808,6 +816,29 @@ function calcModal(){
     $('#calcMinus').onclick=()=>apply(-1);$('#calcPlus').onclick=()=>apply(1);$('#calcClose').onclick=closeModal;
   };
   draw();
+}
+
+/* ---------- Journal des points de vie ---------- */
+/* Les changements rapprochés d'un même joueur sont regroupés en une seule ligne */
+function logChange(i,k,d,fresh){
+  if(!game.log)game.log=[];
+  const last=game.log[game.log.length-1];
+  if(!fresh&&last&&last.p===i&&last.k===k){last.d+=d;last.v=game.players[i][k];last.t=Date.now()}
+  else game.log.push({p:i,k,d,v:game.players[i][k],t:Date.now()});
+  if(game.log.length>500)game.log.splice(0,game.log.length-500);
+  saveGame();
+}
+function logModal(){
+  const L=(game.log||[]).filter(e=>e.d!==0).slice().reverse();
+  const tm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  openModal(`<h3>📋 Journal des points de vie</h3><p class="m">Les changements les plus récents en haut.</p>
+    <div class="log">${L.length?L.map(e=>`<div class="lrow"><span class="dot" style="background:${COLORS[e.p][0]}"></span>
+      <span class="ln">${esc(game.players[e.p].name)}</span>
+      <span class="ld" style="color:${e.d>0?'#7ee08f':'#ff8a8a'}">${e.d>0?'+':''}${e.d}</span>
+      <span class="lv">→ ${e.v}</span><span class="lt">${tm(e.t)}</span></div>`).join('')
+      :'<div class="empty" style="padding:16px">Aucun changement pour l\'instant.</div>'}</div>
+    <button class="btn" id="logOk">Fermer</button>`);
+  $('#logOk').onclick=closeModal;
 }
 
 /* ---------- Historique des victoires ---------- */
@@ -919,7 +950,7 @@ function coinModal(){
   $('#reflip').onclick=flip;$('#cClose').onclick=closeModal;flip();
 }
 function resetModal(){
-  const msg={magic:'Les points de vie reviennent à leur valeur de départ. Monarque et bénédiction sont retirés.',
+  const msg={magic:'Les points de vie reviennent à leur valeur de départ. Monarque, bénédiction et journal sont effacés.',
     fab:'Les points de vie reviennent à leur valeur de départ. Les jetons Puissance et Agilité sont retirés.',
     lorcana:'Le lore de chaque joueur revient à 0.',
     naruto:'La vie revient à sa valeur de départ et le chakra à 0.',
@@ -928,7 +959,7 @@ function resetModal(){
   openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{
-    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;game.recorded=false;game.askedWin=false;saveGame();closeModal();renderBoard();
+    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;game.recorded=false;game.askedWin=false;game.log=[];saveGame();closeModal();renderBoard();
     if(randomFirstOn())setTimeout(pickFirst,350);
   };
   $('#rNo').onclick=closeModal;
