@@ -15,6 +15,7 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 ## Pour tous les jeux
 - Avatar au choix pour chaque joueur au lancement de la partie (10 avatars : Mage, Chevalier, Ninja, Dragon, Robot, Renard, Hibou, Pirate, Fantôme, Lion)
 - Fond d'écran propre à chaque jeu sur le compteur de points de vie
+- Règles essentielles de chaque jeu : bouton 📖 sur l'accueil et 📖 dans le menu de partie
 
 ## Magic
 - Formats : Standard (2 joueurs), Commander (2 à 5), Duel Commander (2), Archenemy (3 à 5)

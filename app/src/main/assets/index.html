@@ -8,6 +8,7 @@
 <script src="art.js"></script>
 <script src="fonds.js"></script>
 <script src="avatars.js"></script>
+<script src="regles.js"></script>
 <style>
 :root{--bg:#0e0f13;--panel:#181a21;--panel2:#20232c;--line:#2c2f3b;--text:#f3f3f6;--muted:#9a9cab;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
@@ -178,6 +179,12 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .hitem .hh{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-bottom:4px}
 .hitem .hw{font-weight:800;font-size:16px}
 .hitem .hp{font-size:13px;color:var(--muted);margin-top:2px}
+.rtabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.rtabs .chip{white-space:nowrap;font-size:14px;flex:none}
+.rules h4{margin:18px 0 8px;font-size:15px;color:var(--gold)}
+.rules ul{margin:0;padding-left:20px}
+.rules li{margin:0 0 8px;line-height:1.4;font-size:15px}
+.rules .warn{font-size:12px;color:var(--muted);margin-top:16px}
 .empty{color:var(--muted);text-align:center;padding:30px 10px}
 .btn.danger{background:#2a1416;color:#ff8a8a}
 .log{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}
@@ -207,6 +214,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
     <p class="sub">Choisis ton jeu de cartes</p>
     <div id="resumeSlot"></div>
     <button class="histbtn" id="histBtn">📜 Historique des parties<small id="histCount"></small></button>
+    <button class="histbtn" id="rulesBtn">📖 Règles des jeux<small>Les règles essentielles</small></button>
     <div class="tcgs" id="tcgs"></div>
     <button class="histbtn" id="updBtn" style="display:none;margin:18px 0 0">⟳ Vérifier les mises à jour<small id="appVer"></small></button>
   </div>
@@ -222,6 +230,15 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
     <h2>Parties</h2>
     <div id="histList"></div>
     <button class="btn danger" id="histClear">Effacer l'historique</button>
+  </div>
+</section>
+
+<!-- REGLES -->
+<section class="screen" id="rules">
+  <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Règles des jeux</b></div>
+  <div class="scroll" style="padding-top:4px">
+    <div class="rtabs" id="rulesTabs"></div>
+    <div class="rules" id="rulesBody"></div>
   </div>
 </section>
 
@@ -452,6 +469,7 @@ function show(id){
   current=id;
   if(id==='home')renderHome();
   if(id==='history')renderHistory();
+  if(id==='rules')renderRules();
   if(id==='setup')renderSetup();
   if(id==='setupFab')renderFabSetup();
   if(id==='setupLor')renderLorSetup();
@@ -482,6 +500,23 @@ function renderHome(){
   const nh=load('cdp_history',[]).length;$('#histCount').textContent=nh?nh+' partie'+(nh>1?'s':''):'';
 }
 $('#histBtn').onclick=()=>show('history');
+/* ---------- Règles ---------- */
+let rulesTcg='magic';
+function rulesHtml(id){
+  const R=(window.RULES||{})[id];if(!R)return '<div class="empty">Règles indisponibles.</div>';
+  return R.sections.map(([h,items])=>`<h4>${esc(h)}</h4><ul>${items.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`).join('')
+    +'<p class="warn">Résumé des règles principales : en cas de doute, les règles officielles du jeu font foi.</p>';
+}
+function renderRules(){
+  $('#rulesTabs').innerHTML=TCGS.map(t=>`<button class="chip ${t.id===rulesTcg?'on':''}" data-r="${t.id}">${t.name}</button>`).join('');
+  document.querySelectorAll('#rulesTabs .chip').forEach(b=>b.onclick=()=>{rulesTcg=b.dataset.r;renderRules()});
+  $('#rulesBody').innerHTML=`<h1 style="font-size:22px;margin-top:12px">${esc(RULES[rulesTcg]?RULES[rulesTcg].title:'')}</h1>`+rulesHtml(rulesTcg);
+}
+$('#rulesBtn').onclick=()=>show('rules');
+function rulesModal(){
+  openModal(`<h3>📖 ${esc(RULES[game.tcg]?RULES[game.tcg].title:'Règles')}</h3><div class="rules">${rulesHtml(game.tcg)}</div><button class="btn" id="rulesOk">Fermer</button>`);
+  $('#rulesOk').onclick=closeModal;
+}
 /* Mise à jour (uniquement dans l'appli Android) */
 if(window.AndroidApp){$('#updBtn').style.display='flex';try{$('#appVer').textContent='v'+AndroidApp.version()}catch(e){}$('#updBtn').onclick=()=>AndroidApp.checkUpdate()}
 
@@ -892,16 +927,16 @@ function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show'
 
 const ACTIONS={
   monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],mission:['📜','Points de mission'],
-  win:['🏆','Victoire'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
+  win:['🏆','Victoire'],rules:['📖','Règles'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
 };
 const MENUS={
-  magic:['monarch','city','log','d20','coin','first','win','reset'],
-  fab:['tokens','coin','first','d20','win','reset'],
-  lorcana:['coin','first','d20','win','reset'],
-  naruto:['mission','coin','first','d20','win','reset'],
-  ygo:['calc','coin','d6','first','win','reset'],
-  sw:['coin','first','d20','win','reset'],
-  riftbound:['log','coin','first','d20','win','reset']
+  magic:['monarch','city','log','d20','coin','first','win','rules','reset'],
+  fab:['tokens','coin','first','d20','win','rules','reset'],
+  lorcana:['coin','first','d20','win','rules','reset'],
+  naruto:['mission','coin','first','d20','win','rules','reset'],
+  ygo:['calc','coin','d6','first','win','rules','reset'],
+  sw:['coin','first','d20','win','rules','reset'],
+  riftbound:['log','coin','first','d20','win','rules','reset']
 };
 function renderMenu(){
   $('#menuGrid').innerHTML=MENUS[game.tcg].map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
@@ -910,7 +945,7 @@ function renderMenu(){
 function bindActions(){
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     sheetOv.classList.remove('show');
-    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,mission:missionModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
+    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,rules:rulesModal,mission:missionModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
       first:()=>setTimeout(pickFirst,150),reset:resetModal,
       edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
   });
@@ -1126,7 +1161,7 @@ window.handleBack=function(){
   if(modalOv.classList.contains('show')){closeModal();return true}
   if(sheetOv.classList.contains('show')){sheetOv.classList.remove('show');return true}
   if(current==='game'){sheetOv.classList.add('show');return true}
-  if(current.startsWith('setup')||current==='history'){show('home');return true}
+  if(current.startsWith('setup')||current==='history'||current==='rules'){show('home');return true}
   return false;
 };
 
