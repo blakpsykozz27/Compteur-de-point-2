@@ -138,7 +138,25 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .calcbtns .btn{margin:0;flex:1}
 .btn.red{background:#c9434a;color:#fff}
 .btn.green{background:#2e9150;color:#fff}
-.chipsel{display:flex;gap:8px;flex-wrap:wrap}
+.half{position:absolute;left:0;right:0;height:50%;container-type:size}
+.half.top{top:0}
+.half.bot{bottom:0;border-top:2px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18)}
+.half .life{font-size:44cqmin}.half .life.l3{font-size:36cqmin}
+.half .unit{font-size:max(11px,7cqmin)}
+.half .pname{font-size:max(13px,9cqmin)}
+.inner.side .half{top:0;bottom:0;height:auto;width:50%}
+.inner.side .half.top{left:0;right:auto}
+.inner.side .half.bot{right:0;left:auto;border-top:0;border-left:2px solid rgba(255,255,255,.14)}
+@media (orientation:landscape){
+  .scroll{padding:16px 24px 100px}
+  .tcgs{grid-template-columns:repeat(3,1fr)}
+  .tcg{aspect-ratio:16/9}
+  .formats{grid-template-columns:repeat(3,1fr)}
+  .cta{left:auto;right:24px;width:320px}
+  .sheet{max-width:640px;margin-left:auto;margin-right:auto}
+  .grid3{grid-template-columns:repeat(6,1fr)}
+  .modal{max-height:94vh}
+}
 </style>
 </head>
 <body>
@@ -210,9 +228,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 <section class="screen" id="setupNaruto">
   <div class="top"><button class="back" data-go="home">‹</button><b style="font-size:18px">Naruto Mythos — Nouvelle partie</b></div>
   <div class="scroll" style="padding-top:4px">
-    <h2>Joueurs</h2>
+    <h2>Joueurs et points de vie</h2>
     <div id="narNames"></div>
-    <p class="note">Chaque joueur part de 0 chakra (maximum 100).</p>
+    <p class="note">Chaque joueur a un compteur de vie (modifiable ici) et un compteur de chakra qui part de 0 (maximum 100).</p>
     <h2>Début de partie</h2>
     <button class="toggle" id="narRandToggle" style="width:100%;text-align:left"><span><b>Tirer au sort qui commence</b><br><small style="color:var(--muted)">Au lancement de la partie</small></span><span class="sw" id="narRandSw"></span></button>
   </div>
@@ -307,8 +325,10 @@ const SW_LIFE=30;
 const SETUP_SCREEN={magic:'setup',fab:'setupFab',lorcana:'setupLor',naruto:'setupNaruto',ygo:'setupYgo',sw:'setupSw'};
 /* Pas du toucher / de l'appui long, et bornes min-max */
 const STEPS={ygo:[100,1000]};
-const RANGES={lorcana:[0,null],naruto:[0,CHAKRA_MAX]};
-const UNITS={lorcana:`◆ lore · objectif 20`,naruto:'🌀 chakra',ygo:'LP'};
+const RANGES={lorcana:{life:[0,null]},naruto:{chakra:[0,CHAKRA_MAX]}};
+const UNITS={lorcana:`◆ lore · objectif 20`,ygo:'LP'};
+/* Jeux avec deux compteurs par joueur */
+const DUAL={naruto:{top:['life','❤️ vie'],bot:['chakra','🌀 chakra']}};
 const ARCH_LIVES=[30,40,50,60];
 const COLORS=[
   ['#b8323a','#5a1218'],['#2f6fb5','#13304f'],['#2e9150','#123f22'],['#8a43b5','#3a1650'],['#c98a1e','#5a3a08']
@@ -319,6 +339,14 @@ const LAYOUTS={
   4:{areas:'"b c" "a d"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',90],['b',90],['c',-90],['d',-90]]},
   5:{areas:'"c c" "b d" "a e"',cols:'1fr 1fr',rows:'.85fr 1fr 1fr',cells:[['a',90],['b',90],['c',180],['d',-90],['e',-90]]}
 };
+/* Téléphone en paysage : rangée du haut tournée vers le joueur d'en face */
+const LAYOUTS_LAND={
+  2:{areas:'"b" "a"',cols:'1fr',rows:'1fr 1fr',cells:[['a',0],['b',180]]},
+  3:{areas:'"b c" "a a"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',180],['c',180]]},
+  4:{areas:'"b c" "a d"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',180],['c',180],['d',0]]},
+  5:{areas:'"b c d" "a a e"',cols:'1fr 1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',180],['c',180],['d',180],['e',0]]}
+};
+const isLand=()=>innerWidth>innerHeight;
 
 /* ---------- Outils ---------- */
 const $=s=>document.querySelector(s);
@@ -468,16 +496,19 @@ $('#lorStartBtn').onclick=()=>{
 };
 
 /* ---------- Configuration Naruto ---------- */
-let narSetup=Object.assign({names:['',''],random:true},load('cdp_nar_setup',{}));
+const NARUTO_LIFE=20;
+let narSetup=Object.assign({names:['',''],lives:[NARUTO_LIFE,NARUTO_LIFE],random:true},load('cdp_nar_setup',{}));
+if(!narSetup.lives)narSetup.lives=[NARUTO_LIFE,NARUTO_LIFE];
 function saveNarSetup(){store('cdp_nar_setup',narSetup)}
 function renderNarSetup(){
-  $('#narNames').innerHTML=[0,1].map(i=>`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(narSetup.names[i]||'')}"></div>`).join('');
-  document.querySelectorAll('#narNames input').forEach(inp=>inp.oninput=()=>{narSetup.names[+inp.dataset.i]=inp.value;saveNarSetup()});
+  $('#narNames').innerHTML=[0,1].map(i=>`<div class="prow"><span class="dot" style="background:${COLORS[i][0]}"></span><input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(narSetup.names[i]||'')}"><input class="field lifein" data-life="${i}" type="number" inputmode="numeric" min="1" max="999" value="${narSetup.lives[i]}"></div>`).join('');
+  document.querySelectorAll('#narNames input[data-i]').forEach(inp=>inp.oninput=()=>{narSetup.names[+inp.dataset.i]=inp.value;saveNarSetup()});
+  document.querySelectorAll('#narNames input[data-life]').forEach(inp=>inp.oninput=()=>{const v=parseInt(inp.value,10);if(v>0&&v<1000){narSetup.lives[+inp.dataset.life]=v;saveNarSetup()}});
   $('#narRandSw').classList.toggle('on',narSetup.random);
 }
 $('#narRandToggle').onclick=()=>{narSetup.random=!narSetup.random;saveNarSetup();$('#narRandSw').classList.toggle('on',narSetup.random)};
 $('#narStartBtn').onclick=()=>{
-  game={tcg:'naruto',players:[0,1].map(i=>({name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,life:0,start:0}))};
+  game={tcg:'naruto',players:[0,1].map(i=>{const life=narSetup.lives[i]||NARUTO_LIFE;return {name:(narSetup.names[i]||'').trim()||`Joueur ${i+1}`,life,start:life,chakra:0}})};
   saveGame();startBoard();
   if(narSetup.random)setTimeout(pickFirst,450);
 };
@@ -541,16 +572,21 @@ function randomFirstOn(){return ({magic:setup,fab:fabSetup,lorcana:lorSetup,naru
 let game=null;
 const deltas=[];
 function saveGame(){store('cdp_game',game)}
-function startBoard(){if(!game.tcg)game.tcg='magic';show('game');renderBoard();renderMenu()}
+function startBoard(){
+  if(!game.tcg)game.tcg='magic';
+  if(game.tcg==='naruto')game.players.forEach(p=>{if(p.chakra==null){p.chakra=p.life||0;p.life=p.start=NARUTO_LIFE}});
+  show('game');renderBoard();renderMenu();
+}
 
 function renderBoard(){
-  const n=game.players.length,L=LAYOUTS[n],b=$('#board');
+  const n=game.players.length,L=(isLand()?LAYOUTS_LAND:LAYOUTS)[n],b=$('#board');boardLand=isLand();
   b.style.gridTemplateAreas=L.areas;b.style.gridTemplateColumns=L.cols;b.style.gridTemplateRows=L.rows;
   const rc={0:'',90:'r90','-90':'rn90',180:'r180'};
   b.innerHTML=game.players.map((p,i)=>{
     const [area,rot]=L.cells[i];
     return `<div class="cell" id="cell${i}" style="grid-area:${area}">
-      <div class="inner ${rc[rot]}" style="--c1:${COLORS[i][0]};--c2:${COLORS[i][1]}">
+      <div class="inner ${rc[rot]}${DUAL[game.tcg]&&boardLand?' side':''}" style="--c1:${COLORS[i][0]};--c2:${COLORS[i][1]}">
+        ${DUAL[game.tcg]?dualPanel(i,p):`
         <div class="zone minus" data-i="${i}" data-d="-1"><span>−</span></div>
         <div class="zone plus" data-i="${i}" data-d="1"><span>+</span></div>
         <div class="info">
@@ -560,44 +596,60 @@ function renderBoard(){
           <div class="delta" id="delta${i}"></div>
           <div class="badges" id="badges${i}"></div>
           <div class="callout" id="call${i}"></div>
-        </div>
+        </div>`}
       </div></div>`;
   }).join('');
   b.querySelectorAll('.zone').forEach(bindZone);
-  for(let i=0;i<n;i++){updateLife(i);deltas[i]={sum:0,t:null}}
+  for(let i=0;i<n;i++){deltas[i]={life:{sum:0,t:null},chakra:{sum:0,t:null}};updateLife(i)}
   updateBadges();
 }
+function dualPanel(i,p){
+  const D=DUAL[game.tcg],half=(pos,[k,label])=>`<div class="half ${pos}">
+    <div class="zone minus" data-i="${i}" data-d="-1" data-k="${k}"><span>−</span></div>
+    <div class="zone plus" data-i="${i}" data-d="1" data-k="${k}"><span>+</span></div>
+    <div class="info">
+      ${pos==='top'?`<div class="pname">${esc(p.name)}</div>`:''}
+      <div class="life" id="${k==='life'?'life':k}${i}"></div>
+      <div class="unit">${label}</div>
+      <div class="delta" id="delta${k==='life'?'':k}${i}"></div>
+      ${pos==='top'?`<div class="badges" id="badges${i}"></div><div class="callout" id="call${i}"></div>`:''}
+    </div></div>`;
+  return half('top',D.top)+half('bot',D.bot);
+}
+let boardLand=null,resizeT;
+addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{if(current==='game'&&game&&isLand()!==boardLand)renderBoard()},120)});
+function setNum(el,v){const len=String(v).length;el.textContent=v;el.classList.toggle('l3',len===3);el.classList.toggle('l4',len>=4)}
 function updateLife(i){
-  const p=game.players[i],el=$('#life'+i),len=String(p.life).length;el.textContent=p.life;
-  el.classList.toggle('l3',len===3);el.classList.toggle('l4',len>=4);
+  const p=game.players[i];setNum($('#life'+i),p.life);
+  if(DUAL[game.tcg])setNum($('#chakra'+i),p.chakra||0);
   const inner=$('#cell'+i).querySelector('.inner');
   if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
-  else if(game.tcg!=='naruto')inner.classList.toggle('dead',p.life<=0);
+  else inner.classList.toggle('dead',p.life<=0);
 }
-function changeLife(i,d){
-  const p=game.players[i],before=p.life;
-  p.life+=d;
-  const R=RANGES[game.tcg];
+function changeLife(i,d,k='life'){
+  const p=game.players[i],before=p[k]||0;
+  p[k]=before+d;
+  const R=(RANGES[game.tcg]||{})[k];
   if(R){
-    if(R[0]!=null&&p.life<R[0])p.life=R[0];
-    if(R[1]!=null&&p.life>R[1])p.life=R[1];
-    d=p.life-before;if(d===0)return;
+    if(R[0]!=null&&p[k]<R[0])p[k]=R[0];
+    if(R[1]!=null&&p[k]>R[1])p[k]=R[1];
+    d=p[k]-before;if(d===0)return;
   }
   if(game.tcg==='lorcana'&&before<LORE_GOAL&&p.life>=LORE_GOAL){vibrate(80);callout(i,'Victoire !',3500);toast(`🏆 ${esc(p.name)} atteint ${LORE_GOAL} lore !`,3000)}
   updateLife(i);saveGame();vibrate(8);
-  const D=deltas[i],el=$('#delta'+i);D.sum+=d;
+  const D=deltas[i][k],el=$('#delta'+(k==='life'?'':k)+i);D.sum+=d;
   el.textContent=(D.sum>0?'+':'')+D.sum;el.style.color=D.sum>=0?'#b9ffc4':'#ffc2c2';
   el.classList.toggle('show',D.sum!==0);clearTimeout(D.t);
   D.t=setTimeout(()=>{el.classList.remove('show');D.sum=0},1800);
 }
 function bindZone(z){
-  const i=+z.dataset.i,d=+z.dataset.d,[s1,s10]=STEPS[game.tcg]||[1,10];let hold=null,rep=null,held=false;
+  const i=+z.dataset.i,d=+z.dataset.d,k=z.dataset.k||'life',[s1,s10]=STEPS[game.tcg]||[1,10];let hold=null,rep=null,held=false;
   const stop=()=>{clearTimeout(hold);clearInterval(rep);z.classList.remove('press')};
   z.addEventListener('pointerdown',e=>{
     e.preventDefault();held=false;z.classList.add('press');
-    hold=setTimeout(()=>{held=true;changeLife(i,d*s10);rep=setInterval(()=>changeLife(i,d*s10),550)},450);
+    hold=setTimeout(()=>{held=true;changeLife(i,d*s10,k);rep=setInterval(()=>changeLife(i,d*s10,k),550)},450);
   });
-  z.addEventListener('pointerup',()=>{if(!held&&z.classList.contains('press'))changeLife(i,d*s1);stop()});
+  z.addEventListener('pointerup',()=>{if(!held&&z.classList.contains('press'))changeLife(i,d*s1,k);stop()});
   z.addEventListener('pointercancel',stop);z.addEventListener('pointerleave',stop);
   z.addEventListener('contextmenu',e=>e.preventDefault());
 }
@@ -758,13 +810,13 @@ function resetModal(){
   const msg={magic:'Les points de vie reviennent à leur valeur de départ. Monarque et bénédiction sont retirés.',
     fab:'Les points de vie reviennent à leur valeur de départ. Les jetons Puissance et Agilité sont retirés.',
     lorcana:'Le lore de chaque joueur revient à 0.',
-    naruto:'Le chakra de chaque joueur revient à 0.',
+    naruto:'La vie revient à sa valeur de départ et le chakra à 0.',
     ygo:'Les LP reviennent à leur valeur de départ.',
     sw:'Les points de vie reviennent à leur valeur de départ.'}[game.tcg];
   openModal(`<h3>Recommencer ?</h3><p class="m">${msg}</p>
     <button class="btn" id="rOk">Recommencer la partie</button><button class="btn ghost" id="rNo">Annuler</button>`);
   $('#rOk').onclick=()=>{
-    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}});game.monarch=null;saveGame();closeModal();renderBoard();
+    game.players.forEach(p=>{p.life=p.start;p.city=false;if(game.tcg==='fab'){p.might=0;p.agility=0}if(game.tcg==='naruto')p.chakra=0});game.monarch=null;saveGame();closeModal();renderBoard();
     if(randomFirstOn())setTimeout(pickFirst,350);
   };
   $('#rNo').onclick=closeModal;
