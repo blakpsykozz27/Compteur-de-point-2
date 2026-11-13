@@ -27,4 +27,5 @@ Pour publier une version : créer un tag `v1.0.0` → l'APK apparaît dans **Rel
 ## Structure
 - `app/src/main/assets/index.html` — toute l'interface (HTML/CSS/JS)
 - `app/src/main/java/.../MainActivity.java` — conteneur Android plein écran
-- `app/compteur.keystore.b64` et `app/src/main/res/mipmap-xxxhdpi/ic_launcher.png.b64` — clé de signature et icône, stockées en base64 et décodées automatiquement au moment de la compilation
+- `app/src/main/res/drawable/ic_launcher_fg.xml` — icône (vectorielle)
+- `app/compteur.keystore.b64` — clé de signature, stockée en base64 et décodée automatiquement à la compilation
