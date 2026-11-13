@@ -52,7 +52,7 @@ Chaque `push` sur `main` compile l'APK automatiquement (GitHub Actions) :
 Chaque push publie aussi automatiquement une **Release** `v<versionName>` avec l'APK.
 
 ## Mise à jour automatique
-Au lancement, l'appli vérifie la dernière Release GitHub. Si sa version est plus récente, elle propose « Mettre à jour », télécharge l'APK et lance l'installation (Android demande une confirmation, et la première fois l'autorisation d'installer des applications). Un bouton « Vérifier les mises à jour » est aussi présent en bas de l'accueil.
+Au lancement, l'appli vérifie la dernière Release GitHub. Si sa version est plus récente, elle propose « Télécharger » : l'APK s'ouvre dans le navigateur, puis on l'installe comme d'habitude. L'appli ne demande pas le droit d'installer des applications, que Play Protect considère comme dangereux. Un bouton « Vérifier les mises à jour » est aussi présent en bas de l'accueil.
 
 Pour publier une mise à jour : augmenter `versionCode` et `versionName` dans `app/build.gradle`, puis pousser sur `main`.
 

@@ -2,7 +2,6 @@ package com.compteurdepoint.app;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -66,17 +65,6 @@ public class MainActivity extends Activity {
         updater.check(false);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (updater != null) updater.onResume();
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        if (Updater.ACTION_INSTALL_STATUS.equals(intent.getAction())) updater.onInstallStatus(intent);
-    }
 
     private void hideSystemBars() {
         webView.setSystemUiVisibility(
