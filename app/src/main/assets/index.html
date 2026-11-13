@@ -579,12 +579,14 @@ function startBoard(){
 }
 
 function renderBoard(){
-  const n=game.players.length,L=(isLand()?LAYOUTS_LAND:LAYOUTS)[n],b=$('#board');boardLand=isLand();
+  boardLand=isLand();
+  if(DUAL[game.tcg]&&!boardLand)return renderSplitBoard();
+  const n=game.players.length,L=(boardLand?LAYOUTS_LAND:LAYOUTS)[n],b=$('#board');
   b.style.gridTemplateAreas=L.areas;b.style.gridTemplateColumns=L.cols;b.style.gridTemplateRows=L.rows;
   const rc={0:'',90:'r90','-90':'rn90',180:'r180'};
   b.innerHTML=game.players.map((p,i)=>{
     const [area,rot]=L.cells[i];
-    return `<div class="cell" id="cell${i}" style="grid-area:${area}">
+    return `<div class="cell" id="cell${i}" data-p="${i}" style="grid-area:${area}">
       <div class="inner ${rc[rot]}${DUAL[game.tcg]&&boardLand?' side':''}" style="--c1:${COLORS[i][0]};--c2:${COLORS[i][1]}">
         ${DUAL[game.tcg]?dualPanel(i,p):`
         <div class="zone minus" data-i="${i}" data-d="-1"><span>−</span></div>
@@ -601,6 +603,30 @@ function renderBoard(){
   }).join('');
   b.querySelectorAll('.zone').forEach(bindZone);
   for(let i=0;i<n;i++){deltas[i]={life:{sum:0,t:null},chakra:{sum:0,t:null}};updateLife(i)}
+  updateBadges();
+}
+/* Portrait : 4 cases (vie + chakra de chaque joueur), disposées comme un 2 contre 2 */
+const SPLIT_TILES=[[0,'top','b',90],[0,'bot','a',90],[1,'bot','c',-90],[1,'top','d',-90]];
+function renderSplitBoard(){
+  const b=$('#board'),D=DUAL[game.tcg],rc={90:'r90','-90':'rn90'};
+  b.style.gridTemplateAreas='"b c" "a d"';b.style.gridTemplateColumns='1fr 1fr';b.style.gridTemplateRows='1fr 1fr';
+  b.innerHTML=SPLIT_TILES.map(([i,pos,area,rot])=>{
+    const p=game.players[i],[k,label]=D[pos],main=pos==='top';
+    return `<div class="cell" id="cell${main?'':k}${i}" data-p="${i}" style="grid-area:${area}">
+      <div class="inner ${rc[rot]}" style="--c1:${COLORS[i][main?0:1]};--c2:${main?COLORS[i][1]:'#111318'}">
+        <div class="zone minus" data-i="${i}" data-d="-1" data-k="${k}"><span>−</span></div>
+        <div class="zone plus" data-i="${i}" data-d="1" data-k="${k}"><span>+</span></div>
+        <div class="info">
+          <div class="pname">${esc(p.name)}</div>
+          <div class="life" id="${k==='life'?'life':k}${i}"></div>
+          <div class="unit">${label}</div>
+          <div class="delta" id="delta${k==='life'?'':k}${i}"></div>
+          ${main?`<div class="badges" id="badges${i}"></div><div class="callout" id="call${i}"></div>`:''}
+        </div>
+      </div></div>`;
+  }).join('');
+  b.querySelectorAll('.zone').forEach(bindZone);
+  for(let i=0;i<game.players.length;i++){deltas[i]={life:{sum:0,t:null},chakra:{sum:0,t:null}};updateLife(i)}
   updateBadges();
 }
 function dualPanel(i,p){
@@ -622,9 +648,10 @@ function setNum(el,v){const len=String(v).length;el.textContent=v;el.classList.t
 function updateLife(i){
   const p=game.players[i];setNum($('#life'+i),p.life);
   if(DUAL[game.tcg])setNum($('#chakra'+i),p.chakra||0);
-  const inner=$('#cell'+i).querySelector('.inner');
-  if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
-  else inner.classList.toggle('dead',p.life<=0);
+  document.querySelectorAll(`.cell[data-p="${i}"] .inner`).forEach(inner=>{
+    if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
+    else inner.classList.toggle('dead',p.life<=0);
+  });
 }
 function changeLife(i,d,k='life'){
   const p=game.players[i],before=p[k]||0;
@@ -671,13 +698,13 @@ let picking=false;
 function pickFirst(){
   if(picking||!game)return;picking=true;
   const n=game.players.length,win=rnd(n),total=n*3+win;let step=0;
-  const cells=[...document.querySelectorAll('.cell')];
+  const all=[...document.querySelectorAll('.cell')],grp=j=>all.filter(c=>c.dataset.p==String(j));
   const tick=()=>{
-    cells.forEach(c=>c.classList.remove('hl'));cells[step%n].classList.add('hl');vibrate(5);
+    all.forEach(c=>c.classList.remove('hl'));grp(step%n).forEach(c=>c.classList.add('hl'));vibrate(5);
     if(step>=total){
       vibrate(60);callout(win,'Tu commences !');
       toast(`🎯 ${esc(game.players[win].name)} commence !`,2400);
-      setTimeout(()=>{cells[win].classList.remove('hl');picking=false},2600);return;
+      setTimeout(()=>{grp(win).forEach(c=>c.classList.remove('hl'));picking=false},2600);return;
     }
     step++;setTimeout(tick,70+Math.pow(step/total,3)*330);
   };
