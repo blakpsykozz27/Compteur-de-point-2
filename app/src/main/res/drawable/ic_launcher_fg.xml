@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône : anneau doré + "20" (zone visible : cercle central de 66 sur 108) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24 Z"
+        android:strokeColor="#E8B84A"
+        android:strokeWidth="4" />
+    <path
+        android:pathData="M38,48.5 C38,45 41,43 44.5,43 C48,43 51,45 51,48.5 C51,52 48,54 44,57 L38,64 L51.5,64"
+        android:strokeColor="#F3F3F6"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M63,43 C66.8,43 69.5,47 69.5,53.5 C69.5,60 66.8,64 63,64 C59.2,64 56.5,60 56.5,53.5 C56.5,47 59.2,43 63,43 Z"
+        android:strokeColor="#F3F3F6"
+        android:strokeWidth="4.5" />
+</vector>
