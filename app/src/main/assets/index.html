@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0e0f13">
 <title>Compteur de Points TCG</title>
+<script src="art.js"></script>
 <style>
 :root{--bg:#0e0f13;--panel:#181a21;--panel2:#20232c;--line:#2c2f3b;--text:#f3f3f6;--muted:#9a9cab;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
@@ -26,6 +27,8 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .tcgs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tcg{position:relative;aspect-ratio:3/3.6;border-radius:18px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .tcg .sym{position:absolute;top:10px;right:12px;font-size:46px;opacity:.35}
+.tcg .art{position:absolute;top:8%;left:50%;width:72%;transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.tcg .art svg{width:100%;height:auto;display:block}
 .tcg b{font-size:19px;line-height:1.1}
 .tcg small{color:rgba(255,255,255,.75);font-size:12px;margin-top:4px}
 .tcg .tag{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(0,0,0,.35)}
@@ -82,6 +85,11 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .callout{position:absolute;bottom:10%;font-size:max(14px,6cqmin);font-weight:800;color:var(--gold);opacity:0;transition:opacity .3s}
 .callout.show{opacity:1}
 .inner.dead{filter:grayscale(.85) brightness(.55)}
+/* Magic : pulsation douce à 10 PV ou moins */
+@keyframes lowlife{0%,100%{box-shadow:inset 0 0 0 0 rgba(255,70,70,0)}50%{box-shadow:inset 0 0 0 4px rgba(255,90,90,.75),inset 0 0 40px rgba(255,40,40,.35)}}
+.inner.low{animation:lowlife 1.6s ease-in-out infinite}
+.inner.low .life{animation:lowtxt 1.6s ease-in-out infinite}
+@keyframes lowtxt{0%,100%{opacity:1}50%{opacity:.7}}
 .cell.hl .inner{box-shadow:inset 0 0 0 5px var(--gold),0 0 22px var(--gold)}
 #menuBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#0e0f13;border:3px solid var(--gold);color:var(--gold);font-size:24px;display:grid;place-items:center;z-index:5;box-shadow:0 4px 18px rgba(0,0,0,.6)}
 
@@ -415,7 +423,7 @@ function renderHome(){
   $('#tcgs').innerHTML=TCGS.map(t=>`
     <button class="tcg ${t.ready?'':'soon'}" data-t="${t.id}" style="background:linear-gradient(150deg,${t.g[0]},${t.g[1]})">
       <span class="tag">${t.ready?'Disponible':'Bientôt'}</span>
-      <span class="sym">${t.sym}</span>
+      ${window.TCG_ART&&TCG_ART[t.id]?`<span class="art">${TCG_ART[t.id]}</span>`:`<span class="sym">${t.sym}</span>`}
       <b>${t.name}</b>${t.sub?`<small>${t.sub}</small>`:''}
     </button>`).join('');
   document.querySelectorAll('.tcg').forEach(b=>b.onclick=()=>{
@@ -685,6 +693,7 @@ function updateLife(i){
   document.querySelectorAll(`.cell[data-p="${i}"] .inner`).forEach(inner=>{
     if(game.tcg==='lorcana')inner.classList.toggle('win',p.life>=LORE_GOAL);
     else inner.classList.toggle('dead',p.life<=0);
+    if(game.tcg==='magic')inner.classList.toggle('low',p.life>0&&p.life<=10);
   });
 }
 function changeLife(i,d,k='life'){
