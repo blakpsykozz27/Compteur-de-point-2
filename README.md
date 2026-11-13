@@ -7,14 +7,13 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 | Magic: The Gathering | ✅ Disponible |
 | Flesh and Blood | ✅ Disponible |
 | Lorcana | ✅ Disponible |
-| Star Wars | 🔜 Bientôt |
-| Naruto Mythos | 🔜 Bientôt |
-| Yu-Gi-Oh! | 🔜 Bientôt |
+| Naruto Mythos | ✅ Disponible |
+| Yu-Gi-Oh! | ✅ Disponible |
+| Star Wars Unlimited | ✅ Disponible |
 
 ## Magic
 - Formats : Standard (2 joueurs), Commander (2 à 5), Duel Commander (2), Archenemy (3 à 5)
 - Points de vie de départ : 20, 25, 30, 40 ou personnalisé (vie de l'Archenemy séparée : 30 à 60)
-- Nom de chaque joueur, tirage au sort de celui qui commence
 - Menu de partie : Monarque, Bénédiction de la cité, dé 20, pile ou face, recommencer
 
 ## Flesh and Blood
@@ -26,7 +25,20 @@ Application Android de compteur de points pour jeux de cartes à collectionner.
 - 2 à 4 joueurs nommés
 - Compteur de lore de 0 à 20, victoire annoncée à 20
 
-Toucher = ±1, appui long = ±10. La partie est sauvegardée automatiquement.
+## Naruto Mythos
+- 2 joueurs nommés
+- Compteur de chakra de 0 à 100
+
+## Yu-Gi-Oh!
+- Normal (8000 LP) ou Speed Duel (4000 LP)
+- 1 contre 1, ou 2 contre 2 (Tag Duel, LP partagés par équipe)
+- Toucher = ±100, appui long = ±1000, calculatrice dans le menu, dé 6
+
+## Star Wars Unlimited
+- 2 joueurs nommés
+- 30 PV par défaut, modifiables pour chaque joueur
+
+Toucher = ±1, appui long = ±10 (sauf Yu-Gi-Oh!). La partie est sauvegardée automatiquement.
 
 ## Obtenir l'APK
 Chaque `push` sur `main` compile l'APK automatiquement (GitHub Actions) :
