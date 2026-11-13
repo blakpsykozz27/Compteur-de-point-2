@@ -49,7 +49,12 @@ Toucher = ±1, appui long = ±10 (sauf Yu-Gi-Oh!). La partie est sauvegardée au
 Chaque `push` sur `main` compile l'APK automatiquement (GitHub Actions) :
 **Actions → dernière exécution → Artifacts → CompteurDePoint-apk**.
 
-Pour publier une version : créer un tag `v1.0.0` → l'APK apparaît dans **Releases**.
+Chaque push publie aussi automatiquement une **Release** `v<versionName>` avec l'APK.
+
+## Mise à jour automatique
+Au lancement, l'appli vérifie la dernière Release GitHub. Si sa version est plus récente, elle propose « Mettre à jour », télécharge l'APK et lance l'installation (Android demande une confirmation, et la première fois l'autorisation d'installer des applications). Un bouton « Vérifier les mises à jour » est aussi présent en bas de l'accueil.
+
+Pour publier une mise à jour : augmenter `versionCode` et `versionName` dans `app/build.gradle`, puis pousser sur `main`.
 
 ## Structure
 - `app/src/main/assets/index.html` — toute l'interface (HTML/CSS/JS)

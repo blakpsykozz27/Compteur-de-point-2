@@ -2,11 +2,13 @@ package com.compteurdepoint.app;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -18,6 +20,7 @@ import android.webkit.WebViewClient;
 public class MainActivity extends Activity {
 
     private WebView webView;
+    private Updater updater;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -47,9 +50,32 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
 
         webView.setWebViewClient(new WebViewClient());
+        updater = new Updater(this);
+        // Bouton « Vérifier les mises à jour » de l'écran d'accueil
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface public void checkUpdate() { runOnUiThread(() -> updater.check(true)); }
+            @JavascriptInterface public String version() {
+                try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+                catch (Exception e) { return ""; }
+            }
+        }, "AndroidApp");
         webView.loadUrl("file:///android_asset/index.html");
         setContentView(webView);
         hideSystemBars();
+        // Vérification automatique des mises à jour au lancement
+        updater.check(false);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (updater != null) updater.onResume();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (Updater.ACTION_INSTALL_STATUS.equals(intent.getAction())) updater.onInstallStatus(intent);
     }
 
     private void hideSystemBars() {

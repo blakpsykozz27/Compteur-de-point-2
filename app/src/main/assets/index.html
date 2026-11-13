@@ -208,6 +208,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
     <div id="resumeSlot"></div>
     <button class="histbtn" id="histBtn">📜 Historique des parties<small id="histCount"></small></button>
     <div class="tcgs" id="tcgs"></div>
+    <button class="histbtn" id="updBtn" style="display:none;margin:18px 0 0">⟳ Vérifier les mises à jour<small id="appVer"></small></button>
   </div>
 </section>
 
@@ -452,6 +453,8 @@ function renderHome(){
   const nh=load('cdp_history',[]).length;$('#histCount').textContent=nh?nh+' partie'+(nh>1?'s':''):'';
 }
 $('#histBtn').onclick=()=>show('history');
+/* Mise à jour (uniquement dans l'appli Android) */
+if(window.AndroidApp){$('#updBtn').style.display='flex';try{$('#appVer').textContent='v'+AndroidApp.version()}catch(e){}$('#updBtn').onclick=()=>AndroidApp.checkUpdate()}
 
 /* ---------- Avatars ---------- */
 const AVS=window.AVATARS||[];
