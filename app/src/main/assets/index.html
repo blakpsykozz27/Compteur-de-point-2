@@ -70,10 +70,15 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .inner.rn90{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(-90deg)}
 .inner.r180{transform:translate(-50%,-50%) rotate(180deg)}
 .zone{position:absolute;top:0;bottom:0;width:50%;display:flex;align-items:center;touch-action:none}
-.zone.minus{left:0;padding-left:7%;border-radius:16px 0 0 16px}
-.zone.plus{right:0;justify-content:flex-end;padding-right:7%;border-radius:0 16px 16px 0}
-.zone span{font-size:12cqmin;font-weight:300;opacity:.35;pointer-events:none}
-.zone.press{background:rgba(255,255,255,.08)}
+.zone.minus{left:0;padding-left:4%;border-radius:16px 0 0 16px}
+.zone.plus{right:0;justify-content:flex-end;padding-right:4%;border-radius:0 16px 16px 0}
+.zone span{pointer-events:none;width:max(44px,17cqmin);height:max(44px,17cqmin);border-radius:50%;display:grid;place-items:center;font-size:max(30px,12cqmin);font-weight:900;line-height:1;color:#fff;background:rgba(0,0,0,.38);box-shadow:0 0 0 2px rgba(255,255,255,.55),0 3px 10px rgba(0,0,0,.4);text-shadow:0 2px 6px rgba(0,0,0,.6);transition:transform .08s,background .08s}
+.zone.minus span{padding-bottom:.08em}
+.zone.press{background:rgba(255,255,255,.1)}
+.inner.narrow>.zone{align-items:flex-end;padding-bottom:7%}
+.inner.narrow>.zone span{width:max(42px,22cqmin);height:max(42px,22cqmin);font-size:max(28px,15cqmin)}
+.inner.narrow .info{padding-bottom:12%}
+.zone.press span{transform:scale(.9);background:rgba(255,255,255,.3)}
 .info{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
 .pname{font-size:max(14px,6.5cqmin);font-weight:700;max-width:72%;display:flex;align-items:center;justify-content:center;gap:.35em}
 .pname .nm{opacity:.9;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -193,6 +198,13 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
 .lrow .ld{font-weight:900;min-width:44px;text-align:right}
 .lrow .lv{color:var(--muted);min-width:52px;text-align:right}
 .lrow .lt{color:var(--muted);font-size:12px;min-width:58px;text-align:right}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lopt{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border-radius:14px;background:var(--panel2);border:2px solid transparent;text-align:center}
+.lopt.on{border-color:var(--gold);background:#272114}
+.lopt b{font-size:13.5px;margin-top:4px}.lopt small{font-size:11px;color:var(--muted);line-height:1.2}
+.lprev{display:grid;gap:3px;width:62px;height:104px;padding:3px;border-radius:9px;background:#0e0f13}
+.lprev span{border-radius:5px;display:grid;place-items:center}
+.lprev b{font-size:14px;font-weight:900;color:#fff;display:block}
 @media (orientation:landscape){
   .scroll{padding:16px 24px 100px}
   .tcgs{grid-template-columns:repeat(3,1fr)}
@@ -250,6 +262,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
     <div class="formats" id="formats"></div>
     <h2>Nombre de joueurs</h2>
     <div class="chips" id="counts"></div>
+    <div id="layoutBox"></div>
     <h2>Points de vie de départ</h2>
     <div class="chips" id="lives"></div>
     <div class="custom" id="customLife"><input class="field" id="customLifeIn" type="number" inputmode="numeric" min="1" max="999"><span class="note" style="margin:0">points de vie</span></div>
@@ -287,6 +300,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
   <div class="scroll" style="padding-top:4px">
     <h2>Nombre de joueurs</h2>
     <div class="chips" id="lorCounts"></div>
+    <div id="lorLayoutBox"></div>
     <h2>Joueurs</h2>
     <div id="lorNames"></div>
     <p class="note">Chaque joueur part de 0 lore. Le premier à 20 lore gagne.</p>
@@ -349,6 +363,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute
       <h2>Nombre de joueurs</h2>
       <div class="chips" id="rbCounts"></div>
     </div>
+    <div id="rbLayoutBox"></div>
     <h2>Joueurs</h2>
     <div id="rbNames"></div>
     <p class="note" id="rbNote"></p>
@@ -447,6 +462,50 @@ const LAYOUTS_LAND={
   5:{areas:'"b c d" "a a e"',cols:'1fr 1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',180],['c',180],['d',180],['e',0]]}
 };
 const isLand=()=>innerWidth>innerHeight;
+/* Dispositions au choix à partir de 3 joueurs (téléphone en portrait).
+   Joueurs dans l'ordre du tour : en bas, puis dans le sens des aiguilles d'une montre. */
+const LAYOUT_CHOICES={
+  3:[
+    {id:'table',label:'Autour de la table',desc:'1 en bas, 1 de chaque côté',...LAYOUTS[3]},
+    {id:'face12',label:'1 contre 2',desc:'2 en bas, 1 en face',areas:'"c c" "a b"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',0],['c',180]]},
+    {id:'face21',label:'2 contre 1',desc:'1 en bas, 2 en face',areas:'"b c" "a a"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',180],['c',180]]},
+    {id:'cotes',label:'Côte à côte',desc:'Tous du même côté',areas:'"c" "b" "a"',cols:'1fr',rows:'1fr 1fr 1fr',cells:[['a',0],['b',0],['c',0]]}
+  ],
+  4:[
+    {id:'cotes',label:'Deux de chaque côté',desc:'2 à gauche, 2 à droite',...LAYOUTS[4]},
+    {id:'face',label:'Face à face',desc:'2 en bas, 2 en face',areas:'"d c" "a b"',cols:'1fr 1fr',rows:'1fr 1fr',cells:[['a',0],['b',0],['c',180],['d',180]]},
+    {id:'table',label:'Autour de la table',desc:'1 par côté de la table',areas:'"c c" "b d" "a a"',cols:'1fr 1fr',rows:'1fr 1.3fr 1fr',cells:[['a',0],['b',90],['c',180],['d',-90]]},
+    {id:'ligne',label:'Côte à côte',desc:'Tous du même côté',areas:'"d" "c" "b" "a"',cols:'1fr',rows:'1fr 1fr 1fr 1fr',cells:[['a',0],['b',0],['c',0],['d',0]]}
+  ],
+  5:[
+    {id:'table',label:'Autour de la table',desc:'1 en face, 2 de chaque côté',...LAYOUTS[5]},
+    {id:'bas',label:'1 en bas',desc:'1 en bas, 2 de chaque côté',areas:'"c d" "b e" "a a"',cols:'1fr 1fr',rows:'1fr 1fr .85fr',cells:[['a',0],['b',90],['c',90],['d',-90],['e',-90]]},
+    {id:'face',label:'Face à face',desc:'3 en bas, 2 en face',areas:'"e e e d d d" "a a b b c c"',cols:'repeat(6,1fr)',rows:'1fr 1fr',cells:[['a',0],['b',0],['c',0],['d',180],['e',180]]},
+    {id:'ligne',label:'Côte à côte',desc:'Tous du même côté',areas:'"e" "d" "c" "b" "a"',cols:'1fr',rows:'repeat(5,1fr)',cells:[['a',0],['b',0],['c',0],['d',0],['e',0]]}
+  ]
+};
+function layoutChoice(n){const L=LAYOUT_CHOICES[n];if(!L)return null;const id=load('cdp_layouts',{})[n];return L.find(x=>x.id===id)||L[0]}
+function layoutFor(n){return isLand()?LAYOUTS_LAND[n]:(layoutChoice(n)||LAYOUTS[n])}
+/* Mini-aperçu d'une disposition : chaque numéro est tourné vers son joueur */
+function layoutPreview(L){
+  const rot={0:0,90:90,'-90':-90,180:180};
+  return `<div class="lprev" style="grid-template-areas:${L.areas.replace(/"/g,"'")};grid-template-columns:${L.cols};grid-template-rows:${L.rows}">${
+    L.cells.map(([a,r],i)=>`<span style="grid-area:${a};background:${COLORS[i][0]}"><b style="transform:rotate(${rot[r]}deg)">${i+1}</b></span>`).join('')}</div>`;
+}
+function layoutModal(n,after){
+  const L=LAYOUT_CHOICES[n],cur=layoutChoice(n);
+  openModal(`<h3>🪑 Disposition des joueurs</h3><p class="m">Choisis comment les ${n} joueurs sont placés autour du téléphone. Le chiffre est tourné vers le joueur.</p>
+    <div class="lgrid">${L.map(x=>`<button class="lopt ${x.id===cur.id?'on':''}" data-l="${x.id}">${layoutPreview(x)}<b>${x.label}</b><small>${x.desc}</small></button>`).join('')}</div>
+    ${isLand()?'<p class="note">Téléphone à plat en paysage : la disposition choisie s\'applique en portrait.</p>':''}
+    <button class="btn ghost" id="lClose">Fermer</button>`);
+  document.querySelectorAll('#modal .lopt').forEach(b=>b.onclick=()=>{
+    const all=load('cdp_layouts',{});all[n]=b.dataset.l;store('cdp_layouts',all);vibrate(8);closeModal();after&&after();
+  });
+  $('#lClose').onclick=closeModal;
+}
+/* Ligne « Disposition » dans les écrans de configuration */
+function layoutRowHtml(n){const c=layoutChoice(n);return c?`<button class="toggle" data-layout="${n}" style="width:100%;text-align:left;margin-top:10px"><span><b>🪑 Disposition des joueurs</b><br><small style="color:var(--muted)">${c.label}</small></span><span style="font-size:22px;color:var(--gold)">›</span></button>`:''}
+function bindLayoutRow(box,rerender){const b=document.querySelector(box+' [data-layout]');if(b)b.onclick=()=>layoutModal(+b.dataset.layout,rerender)}
 
 /* ---------- Outils ---------- */
 const $=s=>document.querySelector(s);
@@ -557,6 +616,7 @@ function renderSetup(){
   let c='';for(let n=2;n<=5;n++)c+=`<button class="chip ${n===setup.count?'on':''}" data-n="${n}" ${n<F.min||n>F.max?'disabled':''}>${n}</button>`;
   $('#counts').innerHTML=c;
   document.querySelectorAll('#counts .chip').forEach(b=>b.onclick=()=>{setup.count=+b.dataset.n;saveSetup();renderSetup()});
+  $('#layoutBox').innerHTML=layoutRowHtml(setup.count);bindLayoutRow('#layoutBox',renderSetup);
 
   $('#lives').innerHTML=LIVES.map(l=>`<button class="chip ${!setup.custom&&l===setup.life?'on':''}" data-l="${l}">${l}</button>`).join('')+`<button class="chip ${setup.custom?'on':''}" data-l="x">Autre</button>`;
   document.querySelectorAll('#lives .chip').forEach(b=>b.onclick=()=>{
@@ -629,6 +689,7 @@ function renderLorSetup(){
   let c='';for(let n=2;n<=4;n++)c+=`<button class="chip ${n===lorSetup.count?'on':''}" data-n="${n}">${n}</button>`;
   $('#lorCounts').innerHTML=c;
   document.querySelectorAll('#lorCounts .chip').forEach(b=>b.onclick=()=>{lorSetup.count=+b.dataset.n;saveLorSetup();renderLorSetup()});
+  $('#lorLayoutBox').innerHTML=layoutRowHtml(lorSetup.count);bindLayoutRow('#lorLayoutBox',renderLorSetup);
   defAv(lorSetup,lorSetup.count);
   let h='';
   for(let i=0;i<lorSetup.count;i++){
@@ -730,6 +791,7 @@ function renderRbSetup(){
   $('#rbCounts').innerHTML=[3,4].map(n=>`<button class="chip ${n===rbSetup.count?'on':''}" data-n="${n}">${n}</button>`).join('');
   document.querySelectorAll('#rbCounts .chip').forEach(b=>b.onclick=()=>{rbSetup.count=+b.dataset.n;saveRbSetup();renderRbSetup()});
   const n=rbPlayers(),team=rbSetup.format==='team';
+  $('#rbLayoutBox').innerHTML=team?'':layoutRowHtml(n);bindLayoutRow('#rbLayoutBox',renderRbSetup);
   defAv(rbSetup,n);
   const row=i=>`<div class="prow">${avBtn(i,rbSetup.avatars[i],COLORS[team?Math.floor(i/2):i][0])}<input class="field" data-i="${i}" maxlength="18" placeholder="Joueur ${i+1}" value="${esc(rbSetup.names[i]||'')}"></div>`;
   $('#rbNames').innerHTML=team
@@ -778,7 +840,7 @@ function startBoard(){
 function renderBoard(){
   boardLand=isLand();
   if(DUAL[game.tcg]&&!boardLand)return renderSplitBoard();
-  const n=game.players.length,L=(boardLand?LAYOUTS_LAND:LAYOUTS)[n],b=$('#board');
+  const n=game.players.length,L=layoutFor(n),b=$('#board');
   setBg(b);
   b.style.gridTemplateAreas=L.areas;b.style.gridTemplateColumns=L.cols;b.style.gridTemplateRows=L.rows;
   const rc={0:'',90:'r90','-90':'rn90',180:'r180'};
@@ -800,6 +862,9 @@ function renderBoard(){
       </div></div>`;
   }).join('');
   b.querySelectorAll('.zone').forEach(bindZone);
+  /* Case étroite (plus haute que large pour le joueur) : + et − passent dans les coins du bas */
+  b.querySelectorAll('.cell').forEach(c=>{const inn=c.querySelector('.inner'),side=/r90|rn90/.test(inn.className),
+    w=side?c.clientHeight:c.clientWidth,h=side?c.clientWidth:c.clientHeight;inn.classList.toggle('narrow',w<h*.8)});
   for(let i=0;i<n;i++){deltas[i]={life:{sum:0,t:null},chakra:{sum:0,t:null}};updateLife(i)}
   updateBadges();
 }
@@ -927,7 +992,7 @@ function openModal(html){$('#modal').innerHTML=html;modalOv.classList.add('show'
 
 const ACTIONS={
   monarch:['👑','Monarque'],city:['🏛️','Bénédiction de la cité'],tokens:['💪','Jetons'],mission:['📜','Points de mission'],
-  win:['🏆','Victoire'],rules:['📖','Règles'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
+  win:['🏆','Victoire'],layout:['🪑','Disposition'],rules:['📖','Règles'],log:['📋','Journal'],d20:['🎲','Dé 20'],d6:['🎲','Dé 6'],calc:['🧮','Calculatrice'],coin:['🪙','Pile ou face'],first:['🎯','Qui commence ?'],reset:['↺','Recommencer']
 };
 const MENUS={
   magic:['monarch','city','log','d20','coin','first','win','rules','reset'],
@@ -939,13 +1004,16 @@ const MENUS={
   riftbound:['log','coin','first','d20','win','rules','reset']
 };
 function renderMenu(){
-  $('#menuGrid').innerHTML=MENUS[game.tcg].map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
+  const list=MENUS[game.tcg].slice();
+  if(!list.includes('calc'))list.unshift('calc');
+  if(LAYOUT_CHOICES[game.players.length])list.splice(list.indexOf('reset'),0,'layout');
+  $('#menuGrid').innerHTML=list.map(a=>`<button class="act" data-a="${a}"><i>${ACTIONS[a][0]}</i>${ACTIONS[a][1]}</button>`).join('');
   bindActions();
 }
 function bindActions(){
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     sheetOv.classList.remove('show');
-    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,rules:rulesModal,mission:missionModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
+    ({win:winModal,log:logModal,monarch:monarchModal,city:cityModal,tokens:tokensModal,rules:rulesModal,layout:()=>layoutModal(game.players.length,renderBoard),mission:missionModal,d20:()=>diceModal(20),d6:()=>diceModal(6),calc:calcModal,coin:coinModal,
       first:()=>setTimeout(pickFirst,150),reset:resetModal,
       edit:()=>show(SETUP_SCREEN[game.tcg]),home:()=>show('home')})[b.dataset.a]();
   });
@@ -988,7 +1056,7 @@ function missionModal(){
 function calcModal(){
   let sel=0,val='';
   const draw=()=>{
-    openModal(`<h3>🧮 Calculatrice</h3><p class="m">Choisis ${game.mode==='2v2'?'l\'équipe':'le duelliste'}, tape le montant, puis retire ou ajoute.</p>
+    openModal(`<h3>🧮 Calculatrice</h3><p class="m">Choisis ${game.players.length===2&&/&/.test(game.players[0].name)?'l\'équipe':game.tcg==='ygo'?'le duelliste':'le joueur'}, tape le montant, puis retire ou ajoute.</p>
       <div class="plist">${playerButtons(i=>i===sel,'✓')}</div>
       <div class="calcv" id="calcv">${val||'0'}</div>
       <div class="keys">${['7','8','9','C','4','5','6','⌫','1','2','3','00','0','000'].map(k=>`<button class="key" data-k="${k}"${k==='000'?' style="grid-column:span 2"':''}>${k}</button>`).join('')}</div>
